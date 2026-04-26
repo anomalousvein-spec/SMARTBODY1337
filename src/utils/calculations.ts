@@ -1,7 +1,11 @@
-import { WAIST_RATIO_CATEGORIES, WAIST_RATIO_DISPLAY_CATEGORIES } from '../config/constants';
+import {
+  WAIST_RATIO_CATEGORIES,
+  WAIST_RATIO_DISPLAY_CATEGORIES,
+  ACTIVITY_MULTIPLIERS
+} from '../config/constants';
 
 /**
- * Calculates TDEE using the Mifflin-St Jeor Equation
+ * Calculates BMR using the Mifflin-St Jeor Equation
  */
 export function calculateBMR(
   weight: number,
@@ -12,14 +16,6 @@ export function calculateBMR(
   const genderOffset = gender === 'male' ? 5 : -161;
   return 10 * weight + 6.25 * height - 5 * age + genderOffset;
 }
-
-const ACTIVITY_MULTIPLIERS = {
-  sedentary: 1.2,
-  lightly_active: 1.375,
-  moderately_active: 1.55,
-  very_active: 1.725,
-  extra_active: 1.9,
-} as const;
 
 export function calculateTDEE(
   bmr: number,

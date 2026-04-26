@@ -15,7 +15,7 @@ interface WaistLoggerProps {
 }
 
 /**
- * Component for logging waist measurements
+ * Component for logging waist measurements with edit functionality
  */
 export function WaistLogger({ userId, onWaistLogged }: WaistLoggerProps) {
   const [measurement, setMeasurement] = useState<string>('');
@@ -25,6 +25,7 @@ export function WaistLogger({ userId, onWaistLogged }: WaistLoggerProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +41,7 @@ export function WaistLogger({ userId, onWaistLogged }: WaistLoggerProps) {
     setIsSaving(true);
 
     try {
-      const entry: WaistEntry = {
+      const entry: Omit<WaistEntry, 'id'> = {
         user_id: userId,
         date: new Date(date).toISOString(),
         measurement: parseFloat(measurement),
@@ -48,10 +49,17 @@ export function WaistLogger({ userId, onWaistLogged }: WaistLoggerProps) {
         notes: sanitizeInput(notes) || undefined,
       };
 
-      await db.waist_measurements.add(entry);
+      if (editingId !== null) {
+        await db.waist_measurements.update(editingId, entry);
+        setEditingId(null);
+      } else {
+        await db.waist_measurements.add(entry);
+      }
+
       setSuccess(true);
       setMeasurement('');
       setNotes('');
+      setDate(formatDateForInput(new Date()));
       onWaistLogged?.();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save waist measurement. Please try again.';
@@ -60,12 +68,21 @@ export function WaistLogger({ userId, onWaistLogged }: WaistLoggerProps) {
     } finally {
       setIsSaving(false);
     }
-  }, [userId, measurement, date, unit, notes, onWaistLogged]);
+  }, [userId, measurement, date, unit, notes, onWaistLogged, editingId]);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingId(null);
+    setMeasurement('');
+    setNotes('');
+    setDate(formatDateForInput(new Date()));
+    setError(null);
+    setSuccess(false);
+  }, []);
 
   return (
     <div className="glass card-hover rounded-2xl p-6 shadow-xl">
       <h2 className="text-xl font-bold text-theme-text-primary mb-4">
-        Log Waist Measurement
+        {editingId !== null ? 'Edit Waist Measurement' : 'Log Waist Measurement'}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
@@ -111,12 +128,23 @@ export function WaistLogger({ userId, onWaistLogged }: WaistLoggerProps) {
         />
 
         {error && <FormMessage type="error" message={error} />}
-        {success && <FormMessage type="success" message="Waist measurement logged successfully!" />}
+        {success && <FormMessage type="success" message={editingId !== null ? 'Waist measurement updated!' : 'Waist measurement logged successfully!'} />}
 
-        <SubmitButton
-          isSubmitting={isSaving}
-          idleText="Log Measurement"
-        />
+        <div className="flex gap-2">
+          <SubmitButton
+            isSubmitting={isSaving}
+            idleText={editingId !== null ? 'Update Measurement' : 'Log Measurement'}
+          />
+          {editingId !== null && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              className="px-4 py-2 rounded-lg bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );
