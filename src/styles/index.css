@@ -59,7 +59,9 @@
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #root {
@@ -76,7 +78,7 @@ body {
 /* Standalone PWA styles */
 .standalone-shell {
   height: 100dvh;
-  height: 100vh;
+
 }
 
 /* Smooth transitions for theme changes */

@@ -27,7 +27,7 @@ export default function GlassHeader({ isStandalone, onToggleTheme }: GlassHeader
         </h1>
         <button
           onClick={onToggleTheme}
-          className="p-2 rounded-full bg-theme-bg-tertiary/50 hover:bg-theme-bg-tertiary transition-colors"
+          className="p-3 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full bg-theme-bg-tertiary/50 hover:bg-theme-bg-tertiary transition-colors"
           aria-label="Toggle color theme"
           type="button"
         >

@@ -1,3 +1,4 @@
+import { haptics } from '../../utils/haptics';
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Scale, Ruler, Calculator, Utensils } from 'lucide-react';
@@ -40,9 +41,9 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
           return (
             <Link
               key={item.path}
-              to={item.path}
+              to={item.path} onClick={() => haptics.light()}
               className={cn(
-                'flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300',
+                'flex flex-col items-center justify-center min-w-[48px] min-h-[48px] p-2 rounded-xl transition-all duration-300',
                 isActive
                   ? 'bg-theme-accent/20 text-theme-accent scale-105'
                   : 'text-theme-text-tertiary hover:text-theme-text-secondary hover:bg-theme-bg-tertiary/30'

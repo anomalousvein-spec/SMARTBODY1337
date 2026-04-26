@@ -1,4 +1,5 @@
 import React from 'react';
+import { haptics } from '../../utils/haptics';
 import { cn } from '../../utils/ui';
 
 export interface InputFieldProps {
@@ -293,7 +294,7 @@ export function SubmitButton({
 }: SubmitButtonProps) {
   return (
     <button
-      type="submit"
+      type="submit" onClick={() => haptics.medium()}
       disabled={isSubmitting || disabled}
       aria-busy={isSubmitting}
       aria-label={ariaLabel}

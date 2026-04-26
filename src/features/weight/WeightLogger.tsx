@@ -1,3 +1,5 @@
+import { haptics } from '../../utils/haptics';
+import { Wifi } from 'lucide-react';
 import React, { useState, useCallback } from 'react';
 import { db } from '../../db/database';
 import { WeightEntry } from '../../db/models';
@@ -59,6 +61,7 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
       }
       
       setSuccess(true);
+      haptics.success();
       setWeight('');
       setNotes('');
       setDate(formatDateForInput(new Date()));
@@ -66,6 +69,7 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save weight entry. Please try again.';
       setError(errorMessage);
+      haptics.error();
       console.error('Error saving weight:', err);
     } finally {
       setIsSaving(false);
@@ -90,10 +94,12 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
     try {
       await db.weights.delete(id);
       setSuccess(true);
+      haptics.success();
       onWeightLogged?.();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete weight entry';
       setError(errorMessage);
+      haptics.error();
       console.error('Error deleting weight:', err);
     }
   }, [onWeightLogged]);
@@ -111,6 +117,10 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
     <div className="glass card-hover rounded-2xl p-6 shadow-xl">
       <h2 className="text-xl font-bold text-theme-text-primary mb-4">
         {editingId !== null ? 'Edit Weight Entry' : 'Log Weight'}
+        <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[10px] font-bold text-success border border-success/20">
+          <Wifi className="h-3 w-3" />
+          OFFLINE READY
+        </span>
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>

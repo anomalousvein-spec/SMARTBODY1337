@@ -1,6 +1,9 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { WifiOff } from 'lucide-react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
+import { RefreshCw } from 'lucide-react';
+import { InstallPrompt } from './components/layout/InstallPrompt';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from './utils/ui';
 import { userManager } from './utils/userManager';
@@ -39,31 +42,31 @@ const AnimatedRoutes = ({ userId }: { userId: string }) => {
       <ErrorBoundary>
         <Suspense fallback={<LoadingFallback />}>
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageTransition><AnalyticsDashboard userId={userId} /></PageTransition>} />
+            <Route path="/" element={<PageTransition><AnalyticsDashboard /></PageTransition>} />
             <Route path="/weight" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <WeightLogger userId={userId} />
-                  <WeightChart userId={userId} />
-                  <WeightAnalytics userId={userId} />
+                  <WeightLogger userId="user-1" />
+                  <WeightChart userId="user-1" />
+                  <WeightAnalytics userId="user-1" />
                 </div>
               </PageTransition>
             } />
             <Route path="/waist" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <WaistLogger userId={userId} />
-                  <WaistRatioDisplay userId={userId} height={70} heightUnit="in" />
-                  <WaistTrendChart userId={userId} />
+                  <WaistLogger userId="user-1" />
+                  <WaistRatioDisplay userId="user-1" height={70} heightUnit="in" />
+                  <WaistTrendChart userId="user-1" />
                 </div>
               </PageTransition>
             } />
-            <Route path="/tdee" element={<PageTransition><TDEECalculator userId={userId} /></PageTransition>} />
+            <Route path="/tdee" element={<PageTransition><TDEECalculator userId="user-1" /></PageTransition>} />
             <Route path="/macros" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <MacroLogger userId={userId} />
-                  <MacroSummary userId={userId} />
+                  <MacroLogger userId="user-1" />
+                  <MacroSummary userId="user-1" />
                 </div>
               </PageTransition>
             } />
@@ -88,6 +91,19 @@ function App() {
     window.matchMedia('(display-mode: standalone)').matches || 
     (window.navigator as NavigatorWithStandalone).standalone === true
   );
+  const {
+    offlineReady: [offlineReady, setOfflineReady],
+    needRefresh: [needRefresh, setNeedUpdate],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r: any) {
+      console.log('SW Registered: ' + r);
+    },
+    onRegisterError(error: any) {
+      console.log('SW registration error', error);
+    },
+  });
+
   const [currentUserId, setCurrentUserId] = useState<string>(() => {
     // Get current user from UserManager or use default for backward compatibility
     const user = userManager.getCurrentUser();
@@ -143,6 +159,46 @@ function App() {
           </div>
         )}
 
+        {(offlineReady || needRefresh) && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm">
+            <div className="glass border border-white/10 rounded-2xl p-4 shadow-2xl animate-in slide-in-from-top-4 duration-500">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-theme-accent/20 p-2 rounded-xl">
+                    <RefreshCw className={cn("w-5 h-5 text-theme-accent", needRefresh && "animate-spin")} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-theme-text-primary">
+                      {needRefresh ? 'Update Available' : 'Offline Ready'}
+                    </p>
+                    <p className="text-xs text-theme-text-secondary">
+                      {needRefresh ? 'A new version is ready to install.' : 'App is ready to work offline.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {needRefresh ? (
+                    <button
+                      onClick={() => updateServiceWorker(true)}
+                      className="bg-theme-accent text-white px-4 py-2 rounded-xl text-xs font-bold"
+                    >
+                      Update
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setOfflineReady(false)}
+                      className="bg-theme-bg-tertiary text-theme-text-secondary px-4 py-2 rounded-xl text-xs font-bold"
+                    >
+                      Close
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <InstallPrompt />
         <GlassHeader
           isStandalone={isStandalone}
           _isOnline={isOnline}
