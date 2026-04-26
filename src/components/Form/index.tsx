@@ -59,7 +59,7 @@ export function InputField({
     <div className={className}>
       <label 
         htmlFor={inputId}
-        className="block text-sm font-medium text-theme-text-secondary mb-1"
+        className="block text-xs font-black uppercase tracking-widest text-theme-text-tertiary mb-1.5 ml-1"
       >
         {label}
       </label>
@@ -78,14 +78,14 @@ export function InputField({
         aria-invalid={!!error}
         aria-describedby={error ? `${inputId}-error` : undefined}
         className={cn(
-          "w-full px-4 py-2 rounded-lg border border-white/10 bg-theme-bg-tertiary text-theme-text-primary",
-          "focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+          "w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary/50 text-theme-text-primary outline-none transition-all",
+          "focus:ring-2 focus:ring-theme-accent focus:border-transparent",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          error && "border-red-500 focus:ring-red-500"
+          error && "border-red-500/50 focus:ring-red-500/50"
         )}
       />
       {error && (
-        <p id={`${inputId}-error`} className="mt-1 text-xs text-red-500" role="alert">
+        <p id={`${inputId}-error`} className="mt-1.5 ml-1 text-[10px] font-bold text-red-400 uppercase tracking-wide" role="alert">
           {error}
         </p>
       )}
@@ -136,7 +136,7 @@ export function SelectField({
     <div className={className}>
       <label 
         htmlFor={selectId}
-        className="block text-sm font-medium text-theme-text-secondary mb-1"
+        className="block text-xs font-black uppercase tracking-widest text-theme-text-tertiary mb-1.5 ml-1"
       >
         {label}
       </label>
@@ -148,8 +148,8 @@ export function SelectField({
         required={required}
         aria-label={ariaLabel || label}
         className={cn(
-          "w-full px-4 py-2 rounded-lg border border-white/10 bg-theme-bg-tertiary text-theme-text-primary",
-          "focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+          "w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary/50 text-theme-text-primary outline-none transition-all",
+          "focus:ring-2 focus:ring-theme-accent focus:border-transparent",
           "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       >
@@ -209,7 +209,7 @@ export function TextAreaField({
     <div className={className}>
       <label 
         htmlFor={textareaId}
-        className="block text-sm font-medium text-theme-text-secondary mb-1"
+        className="block text-xs font-black uppercase tracking-widest text-theme-text-tertiary mb-1.5 ml-1"
       >
         {label}
       </label>
@@ -223,8 +223,8 @@ export function TextAreaField({
         required={required}
         aria-label={ariaLabel || label}
         className={cn(
-          "w-full px-4 py-2 rounded-lg border border-white/10 bg-theme-bg-tertiary text-theme-text-primary",
-          "focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+          "w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary/50 text-theme-text-primary outline-none transition-all",
+          "focus:ring-2 focus:ring-theme-accent focus:border-transparent",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           "resize-none"
         )}
@@ -247,14 +247,14 @@ export interface FormMessageProps {
  */
 export function FormMessage({ type, message }: FormMessageProps) {
   const styles = {
-    error: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
-    success: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
-    info: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+    error: "bg-red-500/10 border border-red-500/20 text-red-400",
+    success: "bg-green-500/10 border border-green-500/20 text-green-400",
+    info: "bg-blue-500/10 border border-blue-500/20 text-blue-400",
   };
 
   return (
     <div 
-      className={cn("p-3 rounded-lg text-sm", styles[type])}
+      className={cn("p-4 rounded-xl text-[10px] font-bold uppercase tracking-widest", styles[type])}
       role={type === 'error' ? 'alert' : 'status'}
       aria-live="polite"
     >
@@ -298,8 +298,8 @@ export function SubmitButton({
       aria-busy={isSubmitting}
       aria-label={ariaLabel}
       className={cn(
-        "w-full py-3 px-4 bg-theme-accent hover:opacity-90 disabled:opacity-50 text-white font-semibold rounded-lg",
-        "transition-colors duration-200 flex items-center justify-center",
+        "w-full py-4 px-4 bg-theme-accent hover:opacity-90 disabled:opacity-50 text-white font-black uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]",
+        "flex items-center justify-center",
         className
       )}
     >

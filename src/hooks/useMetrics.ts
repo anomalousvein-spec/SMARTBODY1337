@@ -29,14 +29,17 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
 
   const [settings, setSettings] = useState<TDEESettings | undefined>(undefined);
   const [settingsLoading, setSettingsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadSettings = useCallback(async () => {
     try {
       setSettingsLoading(true);
+      setError(null);
       const res = await db.tdee_settings.get('global');
       setSettings(res);
     } catch (err) {
       console.error('Error loading settings:', err);
+      setError('Failed to load user settings');
     } finally {
       setSettingsLoading(false);
     }
@@ -91,10 +94,10 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
     last7Days.setDate(last7Days.getDate() - 7);
     const recentMacros = macros.filter(m => new Date(m.date) >= last7Days);
     const weeklyAvgCalories = recentMacros.length > 0
-      ? Math.round(recentMacros.reduce((sum, m) => sum + m.calories, 0) / recentMacros.length)
+      ? Math.round(recentMacros.reduce((sum: number, m: MacroEntry) => sum + m.calories, 0) / recentMacros.length)
       : 0;
     const weeklyAvgProtein = recentMacros.length > 0
-      ? Math.round(recentMacros.reduce((sum, m) => sum + m.protein, 0) / recentMacros.length)
+      ? Math.round(recentMacros.reduce((sum: number, m: MacroEntry) => sum + m.protein, 0) / recentMacros.length)
       : 0;
 
     return {
@@ -110,5 +113,5 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
     };
   }, [weights, waist, macros, settings, weightsLoading, waistLoading, macrosLoading, settingsLoading]);
 
-  return { metrics, isLoading, refresh };
+  return { metrics, isLoading, error, refresh };
 }

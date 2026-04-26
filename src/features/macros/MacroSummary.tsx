@@ -1,13 +1,10 @@
 import React from 'react';
 import { useMacroLogs } from '../../hooks/useMacroLogs';
 import { Skeleton, Card } from '../../components';
+import { Utensils } from 'lucide-react';
 
 interface MacroSummaryProps {
   userId: string;
-  targetCalories?: number;
-  targetProtein?: number;
-  targetCarbs?: number;
-  targetFats?: number;
 }
 
 export function MacroSummary({ userId }: MacroSummaryProps) {
@@ -16,7 +13,20 @@ export function MacroSummary({ userId }: MacroSummaryProps) {
   const { logs: entries, isLoading } = useMacroLogs(userId, oneWeekAgo);
 
   if (isLoading) return <Card className="card-hover"><Skeleton className="h-48" /></Card>;
-  if (entries.length === 0) return <Card className="card-hover"><h2 className="text-xl font-bold text-theme-text-primary mb-4">Weekly Macro Summary</h2><p className="text-center text-theme-text-tertiary py-8">No data logged this week.</p></Card>;
+
+  if (entries.length === 0) {
+    return (
+      <Card className="card-hover text-center py-10 px-6 space-y-4">
+        <div className="mx-auto w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
+          <Utensils className="w-8 h-8 text-green-400" />
+        </div>
+        <div>
+          <h2 className="text-lg font-bold text-theme-text-primary">Macro Summary</h2>
+          <p className="text-sm text-theme-text-tertiary mt-1">Log your nutrition intake to see your average weekly breakdown and calorie distribution.</p>
+        </div>
+      </Card>
+    );
+  }
 
   const avgCalories = entries.reduce((sum, e) => sum + e.calories, 0) / entries.length;
   const avgProtein = entries.reduce((sum, e) => sum + e.protein, 0) / entries.length;
@@ -49,7 +59,7 @@ export function MacroSummary({ userId }: MacroSummaryProps) {
       <div className="mt-6 pt-6 border-t border-white/5">
         <h3 className="text-lg font-semibold text-theme-text-primary mb-4">Distribution</h3>
         <div className="flex items-center space-x-8">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-500 via-green-500 to-yellow-500 relative" />
+          <div className="w-24 h-24 rounded-full bg-gradient-to-r from-purple-500 via-green-500 to-yellow-500 relative opacity-80" />
           <div className="space-y-1 text-sm text-theme-text-tertiary">
             <p>Protein: {Math.round((avgProtein * 4 / (totalCals || 1)) * 100)}%</p>
             <p>Carbs: {Math.round((avgCarbs * 4 / (totalCals || 1)) * 100)}%</p>

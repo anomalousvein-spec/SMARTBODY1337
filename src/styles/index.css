@@ -60,6 +60,9 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  /* Prevent scrolling content under status bar on iOS */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 #root {
@@ -76,7 +79,6 @@ body {
 /* Standalone PWA styles */
 .standalone-shell {
   height: 100dvh;
-  height: 100vh;
 }
 
 /* Smooth transitions for theme changes */
@@ -91,11 +93,26 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* Glass morphism utility */
+/* Glass morphism utility - standardized */
 .glass {
-  background: rgba(30, 30, 30, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(30, 30, 30, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+:root[data-theme='amoled'] .glass {
+  background: rgba(18, 18, 18, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Custom Card hover state */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
 }
 
 /* Safe area insets for notched devices */

@@ -5,7 +5,7 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#121212",
-  "theme_color": "#3b82f6",
+  "theme_color": "#121212",
   "orientation": "portrait",
   "icons": [
     {
@@ -28,5 +28,19 @@
     }
   ],
   "categories": ["health", "fitness"],
-  "lang": "en-US"
+  "lang": "en-US",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Weight Log",
+      "url": "/weight",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
 }

@@ -17,7 +17,7 @@ export function Card({ children, className, onClick }: CardProps) {
       onClick={onClick}
       className={cn(
         "glass rounded-2xl p-5 shadow-xl border border-white/5",
-        onClick && "cursor-pointer active:scale-[0.98] transition-transform",
+        onClick && "cursor-pointer active:scale-[0.98] transition-all",
         className
       )}
     >
