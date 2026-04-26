@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { db } from '../../db/database';
 import { WeightEntry } from '../../db/models';
-import { formatDateForInput, toISODate } from '../../utils/dates';
+import { formatDateForInput } from '../../utils/dates';
 import { InputField, SelectField, TextAreaField, FormMessage, SubmitButton } from '../../components/Form';
 import { validateWeight } from '../../utils/validation';
 import { sanitizeInput } from '../../utils/sanitize';
@@ -72,31 +72,7 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
     }
   }, [userId, weight, date, unit, notes, onWeightLogged, editingId]);
 
-  const handleEdit = useCallback(async (entry: WeightEntry) => {
-    setEditingId(entry.id || null);
-    setWeight(entry.weight.toString());
-    setDate(formatDateForInput(new Date(entry.date)));
-    setUnit(entry.unit);
-    setNotes(entry.notes || '');
-    setError(null);
-    setSuccess(false);
-  }, []);
 
-  const handleDelete = useCallback(async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this weight entry?')) {
-      return;
-    }
-    
-    try {
-      await db.weights.delete(id);
-      setSuccess(true);
-      onWeightLogged?.();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete weight entry';
-      setError(errorMessage);
-      console.error('Error deleting weight:', err);
-    }
-  }, [onWeightLogged]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingId(null);

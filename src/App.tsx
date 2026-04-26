@@ -88,7 +88,7 @@ function App() {
     window.matchMedia('(display-mode: standalone)').matches || 
     (window.navigator as NavigatorWithStandalone).standalone === true
   );
-  const [currentUserId, setCurrentUserId] = useState<string>(() => {
+  const [currentUserId] = useState<string>(() => {
     // Get current user from UserManager or use default for backward compatibility
     const user = userManager.getCurrentUser();
     return user?.id || 'user-1';

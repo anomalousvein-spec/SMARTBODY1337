@@ -10,16 +10,21 @@ import { useNavigate } from 'react-router-dom';
 import { useMetrics } from '../hooks/useMetrics';
 import { PaceCoachCard } from '../features/pace-coach';
 import { db } from '../db/database';
-import { DEFAULT_USER_ID, WAIST_RATIO_DISPLAY_CATEGORIES } from '../config/constants';
+import { WAIST_RATIO_DISPLAY_CATEGORIES } from '../config/constants';
 import { Skeleton, CardSkeleton } from '../components';
 import { CalorieOverview, WeeklyAverages, QuickLogSection } from './components';
+
+interface AnalyticsDashboardProps {
+  userId: string;
+}
 
 /**
  * Main dashboard component providing a high-level overview of all metrics.
  * Refactored for performance via component extraction and memoization.
+ * Now correctly accepts userId as a prop for future-proofing multi-user support.
  */
-export function AnalyticsDashboard() {
-  const { metrics, isLoading, error: metricsError, refresh: loadData } = useMetrics(DEFAULT_USER_ID);
+export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
+  const { metrics, isLoading, error: metricsError, refresh: loadData } = useMetrics(userId);
   const [quickLogType, setQuickLogType] = useState<'weight' | 'waist' | null>(null);
   const [quickLogValue, setQuickLogValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -39,14 +44,14 @@ export function AnalyticsDashboard() {
 
       if (quickLogType === 'weight') {
         await db.weights.add({
-          user_id: DEFAULT_USER_ID,
+          user_id: userId,
           date: today,
           weight: val,
           unit: 'lbs'
         });
       } else {
         await db.waist_measurements.add({
-          user_id: DEFAULT_USER_ID,
+          user_id: userId,
           date: today,
           measurement: val,
           unit: 'in'
@@ -61,7 +66,7 @@ export function AnalyticsDashboard() {
     } finally {
       setIsSaving(false);
     }
-  }, [quickLogType, quickLogValue, loadData]);
+  }, [quickLogType, quickLogValue, loadData, userId]);
 
   const handleNavigateMacros = useCallback(() => {
     navigate('/macros');
@@ -158,7 +163,7 @@ export function AnalyticsDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
       >
-        <PaceCoachCard userId={DEFAULT_USER_ID} />
+        <PaceCoachCard userId={userId} />
       </motion.div>
 
       {/* Calorie Summary */}
