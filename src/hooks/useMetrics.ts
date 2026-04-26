@@ -71,7 +71,7 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
     if (weights.length > 1) {
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
-      const lastWeekWeight = [...weights].reverse().find(w => new Date(w.date) <= lastWeek);
+      const lastWeekWeight = [...weights].reverse().find((w: WeightEntry) => new Date(w.date) <= lastWeek);
       if (lastWeekWeight && latestWeight) {
         weightChange = latestWeight.weight - lastWeekWeight.weight;
       }
@@ -87,12 +87,12 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
 
     // Today's macros
     const today = new Date().toISOString().split('T')[0];
-    const todayMacros = macros.find(m => m.date.startsWith(today)) || null;
+    const todayMacros = macros.find((m: MacroEntry) => m.date.startsWith(today)) || null;
 
     // Weekly averages
     const last7Days = new Date();
     last7Days.setDate(last7Days.getDate() - 7);
-    const recentMacros = macros.filter(m => new Date(m.date) >= last7Days);
+    const recentMacros = macros.filter((m: MacroEntry) => new Date(m.date) >= last7Days);
     const weeklyAvgCalories = recentMacros.length > 0
       ? Math.round(recentMacros.reduce((sum: number, m: MacroEntry) => sum + m.calories, 0) / recentMacros.length)
       : 0;
