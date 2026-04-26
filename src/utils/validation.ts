@@ -1,0 +1,76 @@
+import {
+  MIN_WEIGHT_LBS, MAX_WEIGHT_LBS,
+  MIN_CALORIES, MAX_CALORIES,
+  MIN_MACRO_G, MAX_MACRO_G,
+  MIN_WAIST_IN, MAX_WAIST_IN
+} from '../config/constants';
+
+export interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+/**
+ * Validates a weight entry
+ * @param weightStr - Weight value as a string
+ * @returns Validation result with error message if invalid
+ */
+export function validateWeight(weightStr: string): ValidationResult {
+  const weight = parseFloat(weightStr);
+  if (isNaN(weight) || weight <= 0) {
+    return { valid: false, error: 'Please enter a valid weight' };
+  }
+  if (weight < MIN_WEIGHT_LBS || weight > MAX_WEIGHT_LBS) {
+    return { valid: false, error: `Weight must be between ${MIN_WEIGHT_LBS} and ${MAX_WEIGHT_LBS} lbs` };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates a waist measurement
+ * @param measurementStr - Measurement value as a string
+ * @returns Validation result with error message if invalid
+ */
+export function validateWaist(measurementStr: string): ValidationResult {
+  const measurement = parseFloat(measurementStr);
+  if (isNaN(measurement) || measurement <= 0) {
+    return { valid: false, error: 'Please enter a valid measurement' };
+  }
+  if (measurement < MIN_WAIST_IN || measurement > MAX_WAIST_IN) {
+    return { valid: false, error: `Waist measurement must be between ${MIN_WAIST_IN} and ${MAX_WAIST_IN} inches` };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates calorie intake
+ * @param calorieStr - Calories as a string
+ * @returns Validation result with error message if invalid
+ */
+export function validateCalories(calorieStr: string): ValidationResult {
+  const calories = parseFloat(calorieStr);
+  if (isNaN(calories) || calories < 0) {
+    return { valid: false, error: 'Please enter valid calories' };
+  }
+  if (calories < MIN_CALORIES || calories > MAX_CALORIES) {
+    return { valid: false, error: `Calories must be between ${MIN_CALORIES} and ${MAX_CALORIES} kcal` };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates macro grams
+ * @param macroStr - Macro grams as a string
+ * @param name - Macro name for the error message
+ * @returns Validation result with error message if invalid
+ */
+export function validateMacro(macroStr: string, name: string): ValidationResult {
+  const macro = parseFloat(macroStr);
+  if (isNaN(macro) || macro < 0) {
+    return { valid: false, error: `Please enter valid ${name} grams` };
+  }
+  if (macro < MIN_MACRO_G || macro > MAX_MACRO_G) {
+    return { valid: false, error: `${name} must be between ${MIN_MACRO_G} and ${MAX_MACRO_G}g` };
+  }
+  return { valid: true };
+}
