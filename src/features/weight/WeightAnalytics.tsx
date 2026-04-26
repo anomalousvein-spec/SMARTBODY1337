@@ -3,6 +3,7 @@ import { calculateMovingAverage } from '../../utils/calculations';
 import { MOVING_AVERAGE_DAYS } from '../../config/constants';
 import { useWeights } from '../../hooks/useWeights';
 import { Card, Skeleton } from '../../components';
+import { WeightEntry } from '../../db/models';
 
 interface WeightAnalyticsProps {
   userId: string;
@@ -19,7 +20,7 @@ export function WeightAnalytics({ userId, targetWeight }: WeightAnalyticsProps) 
     const totalLoss = startWeight - currentWeight;
     const daysDiff = Math.max(1, (new Date(weights[weights.length - 1].date).getTime() - new Date(weights[0].date).getTime()) / (1000 * 60 * 60 * 24));
     const weeklyAvgLoss = totalLoss / (daysDiff / 7);
-    const weightValues = weights.map(w => w.weight);
+    const weightValues = weights.map((w: WeightEntry) => w.weight);
     const weeklyMA = calculateMovingAverage(weightValues, MOVING_AVERAGE_DAYS);
     return {
       startWeight, currentWeight, totalLoss, weeklyAvgLoss,

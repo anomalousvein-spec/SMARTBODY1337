@@ -63,9 +63,9 @@ export function WeightChart({ userId, startDate, endDate, onEdit, onDelete }: We
   const chartData = useMemo(() => {
     if (weights.length === 0) return { labels: [], datasets: [] };
 
-    const weightValues = weights.map(w => w.weight);
+    const weightValues = weights.map((w: WeightEntry) => w.weight);
     return {
-      labels: weights.map(w => formatDisplayDate(new Date(w.date))),
+      labels: weights.map((w: WeightEntry) => formatDisplayDate(new Date(w.date))),
       datasets: [
         {
           label: 'Weight',
@@ -158,7 +158,7 @@ export function WeightChart({ userId, startDate, endDate, onEdit, onDelete }: We
       <div className="mt-6 space-y-2">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">Recent Entries</h3>
         <div className="max-h-48 overflow-y-auto space-y-2">
-          {weights.slice(-10).reverse().map((entry) => (
+          {weights.slice(-10).reverse().map((entry: WeightEntry) => (
             <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-theme-bg-tertiary/50 hover:bg-theme-bg-tertiary transition-colors">
               <div className="flex items-center gap-3">
                 <span className="text-theme-text-primary font-medium">{entry.weight} {entry.unit}</span>

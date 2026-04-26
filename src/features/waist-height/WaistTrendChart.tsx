@@ -7,6 +7,7 @@ import { useApp } from '../../context/AppContext';
 import { Line } from 'react-chartjs-2';
 import { Card, Skeleton } from '../../components';
 import { Ruler } from 'lucide-react';
+import { WaistEntry } from '../../db/models';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -49,10 +50,10 @@ export function WaistTrendChart({ userId, startDate, endDate }: WaistTrendChartP
     if (waistEntries.length === 0) return { labels: [], datasets: [] };
 
     const avgColor = '#10b981';
-    const waistValues = waistEntries.map(w => w.unit === 'in' ? w.measurement : w.measurement / 2.54);
+    const waistValues = waistEntries.map((w: WaistEntry) => w.unit === 'in' ? w.measurement : w.measurement / 2.54);
 
     return {
-      labels: waistEntries.map(w => formatDisplayDate(new Date(w.date))),
+      labels: waistEntries.map((w: WaistEntry) => formatDisplayDate(new Date(w.date))),
       datasets: [
         {
           label: 'Waist (in)',

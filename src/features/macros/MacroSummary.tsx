@@ -2,6 +2,7 @@ import React from 'react';
 import { useMacroLogs } from '../../hooks/useMacroLogs';
 import { Skeleton, Card } from '../../components';
 import { Utensils } from 'lucide-react';
+import { MacroEntry } from '../../db/models';
 
 interface MacroSummaryProps {
   userId: string;
@@ -28,10 +29,10 @@ export function MacroSummary({ userId }: MacroSummaryProps) {
     );
   }
 
-  const avgCalories = entries.reduce((sum, e) => sum + e.calories, 0) / entries.length;
-  const avgProtein = entries.reduce((sum, e) => sum + e.protein, 0) / entries.length;
-  const avgCarbs = entries.reduce((sum, e) => sum + e.carbs, 0) / entries.length;
-  const avgFats = entries.reduce((sum, e) => sum + e.fats, 0) / entries.length;
+  const avgCalories = entries.reduce((sum: number, e: MacroEntry) => sum + e.calories, 0) / entries.length;
+  const avgProtein = entries.reduce((sum: number, e: MacroEntry) => sum + e.protein, 0) / entries.length;
+  const avgCarbs = entries.reduce((sum: number, e: MacroEntry) => sum + e.carbs, 0) / entries.length;
+  const avgFats = entries.reduce((sum: number, e: MacroEntry) => sum + e.fats, 0) / entries.length;
 
   const totalCals = (avgProtein * 4) + (avgCarbs * 4) + (avgFats * 9);
 
