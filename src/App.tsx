@@ -129,8 +129,9 @@ function AppContent() {
       />
 
       <main className={cn(
-        "flex-grow px-4 pb-[calc(6.75rem+env(safe-area-inset-bottom))] pt-4",
-        isStandalone && "pb-[calc(7.25rem+env(safe-area-inset-bottom))]"
+        "flex-grow px-4 pt-4",
+        "pb-[calc(7.5rem+env(safe-area-inset-bottom))]",
+        isStandalone && "pb-[calc(8rem+env(safe-area-inset-bottom))]"
       )}>
         <AnimatedRoutes />
       </main>

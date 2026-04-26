@@ -27,7 +27,7 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
   return (
     <nav
       className={cn(
-        'fixed bottom-0 left-1/2 z-[60] w-full max-w-md -translate-x-1/2 glass border-t border-white/5 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:max-w-2xl md:rounded-b-[2rem]',
+        'fixed bottom-0 left-1/2 z-[60] w-full max-w-md -translate-x-1/2 glass border-t border-white/10 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:max-w-2xl md:rounded-b-[2rem]',
         isStandalone && 'pb-[max(env(safe-area-inset-bottom),1rem)]'
       )}
       role="navigation"
@@ -45,7 +45,7 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
               className={cn(
                 'flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300',
                 isActive
-                  ? 'bg-theme-accent/20 text-theme-accent scale-105'
+                  ? 'bg-theme-accent/20 text-theme-accent'
                   : 'text-theme-text-tertiary hover:text-theme-text-secondary hover:bg-theme-bg-tertiary/30'
               )}
               aria-label={item.ariaLabel}
