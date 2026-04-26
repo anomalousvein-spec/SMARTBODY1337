@@ -2,7 +2,10 @@ import {
   MIN_WEIGHT_LBS, MAX_WEIGHT_LBS,
   MIN_CALORIES, MAX_CALORIES,
   MIN_MACRO_G, MAX_MACRO_G,
-  MIN_WAIST_IN, MAX_WAIST_IN
+  MIN_WAIST_IN, MAX_WAIST_IN,
+  MIN_AGE, MAX_AGE,
+  MIN_HEIGHT_IN, MAX_HEIGHT_IN,
+  MIN_HEIGHT_CM, MAX_HEIGHT_CM
 } from '../config/constants';
 
 export interface ValidationResult {
@@ -71,6 +74,31 @@ export function validateMacro(macroStr: string, name: string): ValidationResult 
   }
   if (macro < MIN_MACRO_G || macro > MAX_MACRO_G) {
     return { valid: false, error: `${name} must be between ${MIN_MACRO_G} and ${MAX_MACRO_G}g` };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates user age
+ */
+export function validateAge(ageStr: string): ValidationResult {
+  const age = parseInt(ageStr);
+  if (isNaN(age) || age < MIN_AGE || age > MAX_AGE) {
+    return { valid: false, error: `Age must be between ${MIN_AGE} and ${MAX_AGE}` };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validates user height
+ */
+export function validateHeight(heightStr: string, unit: 'in' | 'cm'): ValidationResult {
+  const height = parseFloat(heightStr);
+  const min = unit === 'in' ? MIN_HEIGHT_IN : MIN_HEIGHT_CM;
+  const max = unit === 'in' ? MAX_HEIGHT_IN : MAX_HEIGHT_CM;
+
+  if (isNaN(height) || height < min || height > max) {
+    return { valid: false, error: `Height must be between ${min} and ${max} ${unit}` };
   }
   return { valid: true };
 }

@@ -36,10 +36,16 @@ export const STALL_DETECTION_DAYS = 14;
 export const STALL_THRESHOLD_LBS = 0.5;
 
 // Validation Ranges
+export const MIN_AGE = 13;
+export const MAX_AGE = 120;
 export const MIN_WEIGHT_LBS = 50;
 export const MAX_WEIGHT_LBS = 1000;
 export const MIN_WAIST_IN = 20;
 export const MAX_WAIST_IN = 100;
+export const MIN_HEIGHT_IN = 20;
+export const MAX_HEIGHT_IN = 108;
+export const MIN_HEIGHT_CM = 50;
+export const MAX_HEIGHT_CM = 275;
 export const MIN_CALORIES = 500;
 export const MAX_CALORIES = 5000;
 export const MIN_MACRO_G = 0;
@@ -81,7 +87,9 @@ export const ACTIVITY_MULTIPLIERS = {
 
 // Unit conversion constants
 export const INCHES_TO_CM = 2.54;
-export const KG_TO_LBS = 2.20462;
+export const CM_TO_IN = 0.393700787;
+export const KG_TO_LBS = 2.20462262;
+export const LBS_TO_KG = 0.45359237;
 
 // Protein intake recommendations (grams per lb of bodyweight)
 export const MIN_PROTEIN_PER_LB = 0.7;
