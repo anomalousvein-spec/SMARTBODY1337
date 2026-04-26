@@ -2,8 +2,11 @@
  * Application configuration constants
  */
 
-// Default user ID for single-user mode
+// Default user ID for single-user mode (deprecated - use UserManager)
 export const DEFAULT_USER_ID = 'user-1';
+
+// User management
+export const USER_STORAGE_KEY = 'smartbody_current_user';
 
 // App metadata
 export const APP_NAME = 'SMARTBODY1337';

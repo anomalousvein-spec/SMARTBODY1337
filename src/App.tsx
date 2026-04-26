@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { WifiOff } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from './utils/ui';
-import { DEFAULT_USER_ID } from './config/constants';
+import { userManager } from './utils/userManager';
+import { SettingsPanel } from './features/settings/SettingsPanel';
 
 // Layout Components
 import GlassHeader from './components/layout/GlassHeader';
@@ -30,7 +31,7 @@ const LoadingFallback = () => (
   </div>
 );
 
-const AnimatedRoutes = () => {
+const AnimatedRoutes = ({ userId }: { userId: string }) => {
   const location = useLocation();
 
   return (
@@ -38,34 +39,35 @@ const AnimatedRoutes = () => {
       <ErrorBoundary>
         <Suspense fallback={<LoadingFallback />}>
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageTransition><AnalyticsDashboard /></PageTransition>} />
+            <Route path="/" element={<PageTransition><AnalyticsDashboard userId={userId} /></PageTransition>} />
             <Route path="/weight" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <WeightLogger userId={DEFAULT_USER_ID} />
-                  <WeightChart userId={DEFAULT_USER_ID} />
-                  <WeightAnalytics userId={DEFAULT_USER_ID} />
+                  <WeightLogger userId={userId} />
+                  <WeightChart userId={userId} />
+                  <WeightAnalytics userId={userId} />
                 </div>
               </PageTransition>
             } />
             <Route path="/waist" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <WaistLogger userId={DEFAULT_USER_ID} />
-                  <WaistRatioDisplay userId={DEFAULT_USER_ID} height={70} heightUnit="in" />
-                  <WaistTrendChart userId={DEFAULT_USER_ID} />
+                  <WaistLogger userId={userId} />
+                  <WaistRatioDisplay userId={userId} height={70} heightUnit="in" />
+                  <WaistTrendChart userId={userId} />
                 </div>
               </PageTransition>
             } />
-            <Route path="/tdee" element={<PageTransition><TDEECalculator userId={DEFAULT_USER_ID} /></PageTransition>} />
+            <Route path="/tdee" element={<PageTransition><TDEECalculator userId={userId} /></PageTransition>} />
             <Route path="/macros" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <MacroLogger userId={DEFAULT_USER_ID} />
-                  <MacroSummary userId={DEFAULT_USER_ID} />
+                  <MacroLogger userId={userId} />
+                  <MacroSummary userId={userId} />
                 </div>
               </PageTransition>
             } />
+            <Route path="/settings" element={<PageTransition><SettingsPanel /></PageTransition>} />
           </Routes>
         </Suspense>
       </ErrorBoundary>
@@ -86,6 +88,11 @@ function App() {
     window.matchMedia('(display-mode: standalone)').matches || 
     (window.navigator as NavigatorWithStandalone).standalone === true
   );
+  const [currentUserId, setCurrentUserId] = useState<string>(() => {
+    // Get current user from UserManager or use default for backward compatibility
+    const user = userManager.getCurrentUser();
+    return user?.id || 'user-1';
+  });
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -146,7 +153,7 @@ function App() {
           "flex-grow px-4 pb-[calc(6.75rem+env(safe-area-inset-bottom))] pt-4",
           isStandalone && "pb-[calc(7.25rem+env(safe-area-inset-bottom))]"
         )}>
-          <AnimatedRoutes />
+          <AnimatedRoutes userId={currentUserId} />
         </main>
 
         <AnimatedNav isStandalone={isStandalone} />
