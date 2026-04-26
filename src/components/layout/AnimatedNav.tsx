@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Scale, Ruler, Calculator, Utensils } from 'lucide-react';
+import { Home, Scale, Ruler, Calculator, Utensils, Settings } from 'lucide-react';
 import { cn } from '../../utils/ui';
 
 interface AnimatedNavProps {
@@ -8,16 +8,17 @@ interface AnimatedNavProps {
 }
 
 const navItems = [
-  { path: '/', icon: Home, label: 'Dashboard', ariaLabel: 'Navigate to Dashboard' },
+  { path: '/', icon: Home, label: 'Dash', ariaLabel: 'Navigate to Dashboard' },
   { path: '/weight', icon: Scale, label: 'Weight', ariaLabel: 'Navigate to Weight tracking' },
   { path: '/waist', icon: Ruler, label: 'Waist', ariaLabel: 'Navigate to Waist measurements' },
-  { path: '/tdee', icon: Calculator, label: 'TDEE', ariaLabel: 'Navigate to TDEE calculator' },
   { path: '/macros', icon: Utensils, label: 'Macros', ariaLabel: 'Navigate to Macros logger' },
+  { path: '/tdee', icon: Calculator, label: 'TDEE', ariaLabel: 'Navigate to TDEE calculator' },
+  { path: '/settings', icon: Settings, label: 'Settings', ariaLabel: 'Navigate to Settings' },
 ] as const;
 
 /**
  * Animated bottom navigation bar with smooth transitions
- * Features 5 tabs: Dashboard, Weight, Waist, TDEE, and Macros
+ * Features 6 tabs: Dash, Weight, Waist, Macros, TDEE, and Settings
  * @param isStandalone - Whether the app is running in standalone PWA mode
  */
 export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
@@ -50,8 +51,8 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
               aria-label={item.ariaLabel}
               aria-current={isActive ? 'page' : undefined}
             >
-              <Icon className="w-5 h-5" aria-hidden="true" />
-              <span className="text-[10px] font-medium mt-1">{item.label}</span>
+              <Icon className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+              <span className="text-[9px] md:text-[10px] font-medium mt-1">{item.label}</span>
             </Link>
           );
         })}
