@@ -1,14 +1,17 @@
 import React from 'react';
-import { Trash2, Shield, Info, Database } from 'lucide-react';
+import { Trash2, Shield, Info, Database, Moon, Sun, Zap } from 'lucide-react';
 import { Card } from '../../components';
 import { db } from '../../db/database';
 import { APP_VERSION } from '../../config/constants';
+import { useApp, Theme } from '../../context/AppContext';
 
 /**
  * SettingsPanel provides administrative controls and app information.
  * Refactored to match the app's visual style and architecture.
  */
 export function SettingsPanel() {
+  const { theme, setTheme } = useApp();
+
   const handleClearData = async () => {
     if (window.confirm('Are you sure you want to delete all your data? This cannot be undone.')) {
       try {
@@ -28,6 +31,12 @@ export function SettingsPanel() {
     }
   };
 
+  const themes = [
+    { id: 'default', name: 'Midnight', icon: Moon, color: 'bg-zinc-900' },
+    { id: 'jewel', name: 'Emerald', icon: Zap, color: 'bg-[#080C10]' },
+    { id: 'amoled', name: 'OLED', icon: Sun, color: 'bg-black' }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
@@ -38,6 +47,28 @@ export function SettingsPanel() {
           Configure your experience
         </p>
       </div>
+
+      <section className="space-y-4">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-text-tertiary px-1">
+          Appearance
+        </h3>
+        <div className="grid grid-cols-3 gap-3">
+          {themes.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTheme(t.id as Theme)}
+              className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all ${
+                theme === t.id
+                  ? 'bg-theme-accent/10 border-theme-accent text-theme-accent'
+                  : 'bg-theme-bg-tertiary border-white/5 text-theme-text-tertiary hover:border-white/10'
+              }`}
+            >
+              <t.icon className="w-5 h-5" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">{t.name}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section className="space-y-4">
         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-text-tertiary px-1">

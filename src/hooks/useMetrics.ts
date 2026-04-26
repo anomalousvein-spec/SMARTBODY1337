@@ -1,7 +1,10 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { db } from '../db/database';
 import { WeightEntry, WaistEntry, MacroEntry, TDEESettings } from '../db/models';
 import { DEFAULT_USER_ID, INCHES_TO_CM, DEFAULT_MAINTENANCE_CALORIES, DEFAULT_CUTTING_CALORIES } from '../config/constants';
+import { useWeights } from './useWeights';
+import { useWaistMeasurements } from './useWaistMeasurements';
+import { useMacroLogs } from './useMacroLogs';
 
 export interface Metrics {
   latestWeight: WeightEntry | null;
@@ -17,59 +20,55 @@ export interface Metrics {
 
 /**
  * Custom hook to fetch and calculate user metrics for the dashboard.
- * Optimized to minimize re-computations via useMemo and efficient data processing.
- * @param userId - The ID of the user
- * @returns Object containing metrics, loading state, error, and refresh function
+ * Composed of granular hooks for better modularity.
  */
 export function useMetrics(userId: string = DEFAULT_USER_ID) {
-  const [data, setData] = useState<{
-    weights: WeightEntry[];
-    waist: WaistEntry[];
-    settings: TDEESettings | undefined;
-    macros: MacroEntry[];
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { weights, isLoading: weightsLoading, refresh: refreshWeights } = useWeights(userId);
+  const { measurements: waist, isLoading: waistLoading, refresh: refreshWaist } = useWaistMeasurements(userId);
+  const { logs: macros, isLoading: macrosLoading, refresh: refreshMacros } = useMacroLogs(userId);
 
-  const loadData = useCallback(async () => {
+  const [settings, setSettings] = useState<TDEESettings | undefined>(undefined);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  const loadSettings = useCallback(async () => {
     try {
-      setIsLoading(true);
-      setError(null);
-
-      const [weights, waist, settings, macros] = await Promise.all([
-        db.weights.where('user_id').equals(userId).reverse().toArray(),
-        db.waist_measurements.where('user_id').equals(userId).reverse().toArray(),
-        db.tdee_settings.get('global'),
-        db.macro_logs.where('user_id').equals(userId).reverse().toArray()
-      ]);
-
-      setData({ weights, waist, settings, macros });
+      setSettingsLoading(true);
+      const res = await db.tdee_settings.get('global');
+      setSettings(res);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
-      console.error('Error loading analytics:', err);
-      setError(errorMessage);
+      console.error('Error loading settings:', err);
     } finally {
-      setIsLoading(false);
+      setSettingsLoading(false);
     }
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadSettings();
+  }, [loadSettings]);
+
+  const isLoading = weightsLoading || waistLoading || macrosLoading || settingsLoading;
+
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      refreshWeights(),
+      refreshWaist(),
+      refreshMacros(),
+      loadSettings()
+    ]);
+  }, [refreshWeights, refreshWaist, refreshMacros, loadSettings]);
 
   const metrics = useMemo<Metrics | null>(() => {
-    if (!data) return null;
+    if (weightsLoading || waistLoading || macrosLoading || settingsLoading) return null;
 
-    const { weights, waist, settings, macros } = data;
-    const latestWeight = weights[0] || null;
-    const latestWaist = waist[0] || null;
+    const latestWeight = weights[weights.length - 1] || null;
+    const latestWaist = waist[waist.length - 1] || null;
 
     // Calculate weight change this week
     let weightChange = 0;
     if (weights.length > 1) {
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
-      const lastWeekWeight = weights.find(w => new Date(w.date) <= lastWeek);
+      const lastWeekWeight = [...weights].reverse().find(w => new Date(w.date) <= lastWeek);
       if (lastWeekWeight && latestWeight) {
         weightChange = latestWeight.weight - lastWeekWeight.weight;
       }
@@ -109,7 +108,7 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
       weeklyAvgCalories,
       weeklyAvgProtein
     };
-  }, [data]);
+  }, [weights, waist, macros, settings, weightsLoading, waistLoading, macrosLoading, settingsLoading]);
 
-  return { metrics, isLoading, error, refresh: loadData };
+  return { metrics, isLoading, refresh };
 }

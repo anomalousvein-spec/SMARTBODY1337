@@ -3,8 +3,8 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { WifiOff } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import { cn } from './utils/ui';
-import { userManager } from './utils/userManager';
-import { SettingsPanel } from './features/settings/SettingsPanel';
+import { AppProvider, useApp } from './context/AppContext';
+import { useEditWeight } from './hooks/editing/useEditWeight';
 
 // Layout Components
 import GlassHeader from './components/layout/GlassHeader';
@@ -23,6 +23,7 @@ const WaistTrendChart = lazy(() => import('./features/waist-height/WaistTrendCha
 const TDEECalculator = lazy(() => import('./features/tdee/TDEECalculator').then(m => ({ default: m.TDEECalculator })));
 const MacroLogger = lazy(() => import('./features/macros/MacroLogger').then(m => ({ default: m.MacroLogger })));
 const MacroSummary = lazy(() => import('./features/macros/MacroSummary').then(m => ({ default: m.MacroSummary })));
+const SettingsPanel = lazy(() => import('./features/settings/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
 
 const LoadingFallback = () => (
   <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
@@ -31,39 +32,41 @@ const LoadingFallback = () => (
   </div>
 );
 
-const AnimatedRoutes = ({ userId }: { userId: string }) => {
+const AnimatedRoutes = () => {
+  const { user } = useApp();
   const location = useLocation();
+  const { editingWeight, startEditing, clearEditing } = useEditWeight();
 
   return (
     <AnimatePresence mode="wait">
       <ErrorBoundary>
         <Suspense fallback={<LoadingFallback />}>
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageTransition><AnalyticsDashboard userId={userId} /></PageTransition>} />
+            <Route path="/" element={<PageTransition><AnalyticsDashboard userId={user.id} /></PageTransition>} />
             <Route path="/weight" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <WeightLogger userId={userId} />
-                  <WeightChart userId={userId} />
-                  <WeightAnalytics userId={userId} />
+                  <WeightLogger userId={user.id} editingEntry={editingWeight} onCancelEdit={clearEditing} onWeightLogged={clearEditing} />
+                  <WeightChart userId={user.id} onEdit={startEditing} />
+                  <WeightAnalytics userId={user.id} />
                 </div>
               </PageTransition>
             } />
             <Route path="/waist" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <WaistLogger userId={userId} />
-                  <WaistRatioDisplay userId={userId} height={70} heightUnit="in" />
-                  <WaistTrendChart userId={userId} />
+                  <WaistLogger userId={user.id} />
+                  <WaistRatioDisplay userId={user.id} height={70} heightUnit="in" />
+                  <WaistTrendChart userId={user.id} />
                 </div>
               </PageTransition>
             } />
-            <Route path="/tdee" element={<PageTransition><TDEECalculator userId={userId} /></PageTransition>} />
+            <Route path="/tdee" element={<PageTransition><TDEECalculator userId={user.id} /></PageTransition>} />
             <Route path="/macros" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <MacroLogger userId={userId} />
-                  <MacroSummary userId={userId} />
+                  <MacroLogger userId={user.id} />
+                  <MacroSummary userId={user.id} />
                 </div>
               </PageTransition>
             } />
@@ -79,20 +82,13 @@ interface NavigatorWithStandalone extends Navigator {
   standalone?: boolean;
 }
 
-function App() {
+function AppContent() {
+  const { toggleTheme } = useApp();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [theme, setTheme] = useState<string>(() => {
-    return localStorage.getItem('theme') || 'default';
-  });
   const [isStandalone, setIsStandalone] = useState(() =>
     window.matchMedia('(display-mode: standalone)').matches || 
     (window.navigator as NavigatorWithStandalone).standalone === true
   );
-  const [currentUserId] = useState<string>(() => {
-    // Get current user from UserManager or use default for backward compatibility
-    const user = userManager.getCurrentUser();
-    return user?.id || 'user-1';
-  });
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -104,61 +100,53 @@ function App() {
     window.addEventListener('offline', handleOffline);
     mediaQuery.addEventListener('change', handleDisplayModeChange);
 
-    document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.classList.add('dark');
     document.documentElement.setAttribute('data-display-mode', isStandalone ? 'standalone' : 'browser');
-
-    const themeMeta = document.querySelector('meta[name="theme-color"]');
-    const themeColors: Record<string, string> = {
-      default: '#121212',
-      jewel: '#080C10',
-      amoled: '#000000'
-    };
-    themeMeta?.setAttribute('content', themeColors[theme] || themeColors.default);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       mediaQuery.removeEventListener('change', handleDisplayModeChange);
     };
-  }, [theme, isStandalone]);
-
-  const toggleTheme = () => {
-    const themes = ['default', 'jewel', 'amoled'];
-    const next = themes[(themes.indexOf(theme) + 1) % themes.length];
-    setTheme(next);
-    localStorage.setItem('theme', next);
-  };
+  }, [isStandalone]);
 
   return (
-    <Router>
-      <div className={cn(
-        "relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col overflow-x-hidden bg-theme-bg-primary transition-colors duration-500 md:my-4 md:max-w-2xl md:rounded-[2rem] md:shadow-2xl",
-        isStandalone && "standalone-shell"
+    <div className={cn(
+      "relative mx-auto flex min-h-[100dvh] w-full max-w-md flex-col overflow-x-hidden bg-theme-bg-primary transition-colors duration-500 md:my-4 md:max-w-2xl md:rounded-[2rem] md:shadow-2xl",
+      isStandalone && "standalone-shell"
+    )}>
+      {!isOnline && (
+        <div className="bg-error/20 text-error px-4 py-2 text-sm flex items-center gap-2 z-[60] glass border-b border-error/10">
+          <WifiOff className="w-4 h-4" />
+          <span>You're offline. Changes will sync later.</span>
+        </div>
+      )}
+
+      <GlassHeader
+        isStandalone={isStandalone}
+        _isOnline={isOnline}
+        onToggleTheme={toggleTheme}
+      />
+
+      <main className={cn(
+        "flex-grow px-4 pb-[calc(6.75rem+env(safe-area-inset-bottom))] pt-4",
+        isStandalone && "pb-[calc(7.25rem+env(safe-area-inset-bottom))]"
       )}>
-        {!isOnline && (
-          <div className="bg-error/20 text-error px-4 py-2 text-sm flex items-center gap-2 z-[60] glass border-b border-error/10">
-            <WifiOff className="w-4 h-4" />
-            <span>You're offline. Changes will sync later.</span>
-          </div>
-        )}
+        <AnimatedRoutes />
+      </main>
 
-        <GlassHeader
-          isStandalone={isStandalone}
-          _isOnline={isOnline}
-          onToggleTheme={toggleTheme}
-        />
+      <AnimatedNav isStandalone={isStandalone} />
+    </div>
+  );
+}
 
-        <main className={cn(
-          "flex-grow px-4 pb-[calc(6.75rem+env(safe-area-inset-bottom))] pt-4",
-          isStandalone && "pb-[calc(7.25rem+env(safe-area-inset-bottom))]"
-        )}>
-          <AnimatedRoutes userId={currentUserId} />
-        </main>
-
-        <AnimatedNav isStandalone={isStandalone} />
-      </div>
-    </Router>
+function App() {
+  return (
+    <AppProvider>
+      <Router>
+        <AppContent />
+      </Router>
+    </AppProvider>
   );
 }
 

@@ -16,6 +16,8 @@ export interface WaistEntry {
   notes?: string;
 }
 
+export type ActivityLevel = 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extra_active';
+
 export interface TDEESettings {
   id: string; // 'global'
   user_id: string;
@@ -23,7 +25,7 @@ export interface TDEESettings {
   gender: 'male' | 'female';
   height: number;
   heightUnit: 'in' | 'cm';
-  activityLevel: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extra_active';
+  activityLevel: ActivityLevel;
   targetWeight?: number;
   targetLossRate?: number; // lbs/week
   currentWeight?: number; // For macro recommendations

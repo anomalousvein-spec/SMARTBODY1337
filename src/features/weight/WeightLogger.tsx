@@ -1,23 +1,21 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { db } from '../../db/database';
 import { WeightEntry } from '../../db/models';
 import { formatDateForInput } from '../../utils/dates';
 import { InputField, SelectField, TextAreaField, FormMessage, SubmitButton } from '../../components/Form';
+import { Card } from '../../components';
 import { validateWeight } from '../../utils/validation';
 import { sanitizeInput } from '../../utils/sanitize';
 import { MIN_WEIGHT_LBS, MAX_WEIGHT_LBS } from '../../config/constants';
 
 interface WeightLoggerProps {
-  /** User ID for storing weight entries */
   userId: string;
-  /** Callback fired when weight is successfully logged */
   onWeightLogged?: () => void;
+  editingEntry?: WeightEntry | null;
+  onCancelEdit?: () => void;
 }
 
-/**
- * Component for logging daily body weight with edit/delete functionality
- */
-export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
+export function WeightLogger({ userId, onWeightLogged, editingEntry, onCancelEdit }: WeightLoggerProps) {
   const [weight, setWeight] = useState<string>('');
   const [date, setDate] = useState<string>(formatDateForInput(new Date()));
   const [unit, setUnit] = useState<'lbs' | 'kg'>('lbs');
@@ -25,7 +23,17 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (editingEntry) {
+      setWeight(editingEntry.weight.toString());
+      setDate(formatDateForInput(new Date(editingEntry.date)));
+      setUnit(editingEntry.unit);
+      setNotes(editingEntry.notes || '');
+      setError(null);
+      setSuccess(false);
+    }
+  }, [editingEntry]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +47,6 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
     }
 
     setIsSaving(true);
-
     try {
       const entry: Omit<WeightEntry, 'id'> = {
         user_id: userId,
@@ -49,107 +56,58 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
         notes: sanitizeInput(notes) || undefined,
       };
 
-      if (editingId !== null) {
-        // Update existing entry
-        await db.weights.update(editingId, entry);
-        setEditingId(null);
+      if (editingEntry?.id) {
+        await db.weights.update(editingEntry.id, entry);
       } else {
-        // Add new entry
         await db.weights.add(entry);
       }
       
       setSuccess(true);
-      setWeight('');
-      setNotes('');
-      setDate(formatDateForInput(new Date()));
+      if (!editingEntry) {
+        setWeight('');
+        setNotes('');
+        setDate(formatDateForInput(new Date()));
+      }
       onWeightLogged?.();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save weight entry. Please try again.';
-      setError(errorMessage);
-      console.error('Error saving weight:', err);
+      console.error('Failed to save weight entry:', err);
+      setError('Failed to save weight entry.');
     } finally {
       setIsSaving(false);
     }
-  }, [userId, weight, date, unit, notes, onWeightLogged, editingId]);
+  }, [userId, weight, date, unit, notes, onWeightLogged, editingEntry]);
 
-
-
-  const handleCancelEdit = useCallback(() => {
-    setEditingId(null);
+  const handleCancel = () => {
+    if (editingEntry) {
+      onCancelEdit?.();
+    }
     setWeight('');
     setNotes('');
     setDate(formatDateForInput(new Date()));
     setError(null);
     setSuccess(false);
-  }, []);
+  };
 
   return (
-    <div className="glass card-hover rounded-2xl p-6 shadow-xl">
+    <Card className="card-hover">
       <h2 className="text-xl font-bold text-theme-text-primary mb-4">
-        {editingId !== null ? 'Edit Weight Entry' : 'Log Weight'}
+        {editingEntry ? 'Edit Weight Entry' : 'Log Weight'}
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <InputField
-          label="Date"
-          type="date"
-          value={date}
-          onChange={setDate}
-          required
-        />
-
+        <InputField label="Date" type="date" value={date} onChange={setDate} required />
         <div className="grid grid-cols-2 gap-4">
-          <InputField
-            label="Weight"
-            type="number"
-            value={weight}
-            onChange={setWeight}
-            placeholder="0.0"
-            min={MIN_WEIGHT_LBS}
-            max={MAX_WEIGHT_LBS}
-            step="0.1"
-            required
-            error={error}
-          />
-
-          <SelectField
-            label="Unit"
-            value={unit}
-            onChange={(val) => setUnit(val as 'lbs' | 'kg')}
-            options={[
-              { value: 'lbs', label: 'lbs' },
-              { value: 'kg', label: 'kg' },
-            ]}
-          />
+          <InputField label="Weight" type="number" value={weight} onChange={setWeight} placeholder="0.0" min={MIN_WEIGHT_LBS} max={MAX_WEIGHT_LBS} step="0.1" required error={error} />
+          <SelectField label="Unit" value={unit} onChange={(val) => setUnit(val as 'lbs' | 'kg')} options={[{ value: 'lbs', label: 'lbs' }, { value: 'kg', label: 'kg' }]} />
         </div>
-
-        <TextAreaField
-          label="Notes (optional)"
-          value={notes}
-          onChange={setNotes}
-          placeholder="How are you feeling today?"
-          rows={2}
-        />
-
+        <TextAreaField label="Notes (optional)" value={notes} onChange={setNotes} placeholder="How are you feeling today?" rows={2} />
         {error && <FormMessage type="error" message={error} />}
-        {success && <FormMessage type="success" message={editingId !== null ? 'Weight updated successfully!' : 'Weight logged successfully!'} />}
-
+        {success && <FormMessage type="success" message={editingEntry ? 'Weight updated!' : 'Weight logged!'} />}
         <div className="flex gap-2">
-          <SubmitButton
-            isSubmitting={isSaving}
-            idleText={editingId !== null ? 'Update Weight' : 'Log Weight'}
-          />
-          {editingId !== null && (
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              className="px-4 py-2 rounded-lg bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary transition-colors"
-            >
-              Cancel
-            </button>
-          )}
+          <SubmitButton isSubmitting={isSaving} idleText={editingEntry ? 'Update Weight' : 'Log Weight'} />
+          {(editingEntry || weight) && <button type="button" onClick={handleCancel} className="px-4 py-2 rounded-lg bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary transition-colors">Cancel</button>}
         </div>
       </form>
-    </div>
+    </Card>
   );
 }
