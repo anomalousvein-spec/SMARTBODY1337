@@ -19,6 +19,7 @@ import {
   Tooltip,
   Legend,
   Filler,
+  ChartOptions,
 } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
@@ -60,6 +61,14 @@ export function WeightChart({ startDate, endDate, onEdit, onDelete }: WeightChar
     }
   };
 
+  // Create gradient for chart
+  const createGradient = (ctx: CanvasRenderingContext2D, color: string) => {
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, color.includes('rgb') ? color.replace(')', ', 0.3)').replace('rgb', 'rgba') : `${color}4D`);
+    gradient.addColorStop(1, color.includes('rgb') ? color.replace(')', ', 0.0)').replace('rgb', 'rgba') : `${color}00`);
+    return gradient;
+  };
+
   const chartData = useMemo(() => {
     if (weights.length === 0) return { labels: [], datasets: [] };
 
@@ -71,21 +80,30 @@ export function WeightChart({ startDate, endDate, onEdit, onDelete }: WeightChar
           label: 'Weight',
           data: weightValues,
           borderColor: chartColors.accent,
-          backgroundColor: chartColors.accent.includes('rgb')
-            ? chartColors.accent.replace('rgb', 'rgba').replace(')', ', 0.1)')
-            : `${chartColors.accent}20`,
+          backgroundColor: (ctx: any) => {
+            const chartCtx = ctx.chart.ctx;
+            const gradient = createGradient(chartCtx, chartColors.accent);
+            return gradient;
+          },
           fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: chartColors.accent
+          tension: 0.4,
+          pointRadius: 5,
+          pointBackgroundColor: chartColors.accent,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+          pointHoverBackgroundColor: chartColors.accent,
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 3
         },
         {
           label: 'Average',
           data: calculateMovingAverage(weightValues, MOVING_AVERAGE_DAYS),
           borderColor: '#10b981',
           backgroundColor: 'transparent',
-          borderDash: [5, 5],
-          tension: 0.3,
+          borderDash: [6, 4],
+          borderWidth: 2,
+          tension: 0.4,
           pointRadius: 0
         }
       ],
@@ -96,6 +114,11 @@ export function WeightChart({ startDate, endDate, onEdit, onDelete }: WeightChar
     return {
       responsive: true,
       maintainAspectRatio: false,
+      interaction: {
+        mode: 'nearest' as const,
+        axis: 'x' as const,
+        intersect: false
+      },
       plugins: {
         legend: {
           display: false
@@ -103,14 +126,19 @@ export function WeightChart({ startDate, endDate, onEdit, onDelete }: WeightChar
         tooltip: {
           mode: 'index' as const,
           intersect: false,
-          backgroundColor: theme === 'amoled' ? '#121212' : 'rgba(30, 30, 30, 0.9)',
+          backgroundColor: theme === 'amoled' ? '#121212' : 'rgba(30, 30, 30, 0.95)',
           titleColor: '#fff',
           bodyColor: '#fff',
-          padding: 12,
-          cornerRadius: 12,
+          padding: 14,
+          cornerRadius: 14,
           displayColors: false,
           borderWidth: 1,
-          borderColor: 'rgba(255, 255, 255, 0.1)'
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          titleFont: { size: 13 } as any,
+          bodyFont: { size: 12 },
+          callbacks: {
+            label: (context: any) => `${context.dataset.label}: ${context.parsed.y.toFixed(1)} lbs`
+          }
         }
       },
       scales: {
@@ -120,20 +148,22 @@ export function WeightChart({ startDate, endDate, onEdit, onDelete }: WeightChar
           },
           ticks: {
             color: chartColors.text,
-            font: { size: 10 }
+            font: { size: 11 } as any
           }
         },
         y: {
           grid: {
-            color: chartColors.grid
+            color: chartColors.grid,
+            drawBorder: false
           },
           ticks: {
             color: chartColors.text,
-            font: { size: 10 }
+            font: { size: 11 } as any,
+            padding: 8
           }
         }
       }
-    };
+    } as ChartOptions<'line'>;
   }, [chartColors, theme]);
 
   if (isLoading) return <Card className="card-hover"><Skeleton className="h-64" /></Card>;
@@ -157,16 +187,17 @@ export function WeightChart({ startDate, endDate, onEdit, onDelete }: WeightChar
       <div className="h-80"><Line data={chartData} options={options} /></div>
       <div className="mt-6 space-y-2">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">Recent Entries</h3>
-        <div className="max-h-48 overflow-y-auto space-y-2">
+        <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar">
           {weights.slice(-10).reverse().map((entry: WeightEntry) => (
-            <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-theme-bg-tertiary/50 hover:bg-theme-bg-tertiary transition-colors">
+            <div key={entry.id} className="flex items-center justify-between p-3 rounded-xl bg-theme-bg-tertiary/50 hover:bg-theme-bg-tertiary/70 transition-all duration-200 group">
               <div className="flex items-center gap-3">
-                <span className="text-theme-text-primary font-medium">{entry.weight} {entry.unit}</span>
+                <div className="w-2 h-2 rounded-full bg-theme-accent opacity-60 group-hover:opacity-100 transition-opacity" />
+                <span className="text-theme-text-primary font-semibold">{entry.weight} {entry.unit}</span>
                 <span className="text-xs text-theme-text-tertiary">{formatDisplayDate(new Date(entry.date))}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={() => onEdit?.(entry)} className="p-1.5 rounded-md hover:bg-theme-bg-secondary text-theme-text-tertiary hover:text-blue-400 transition-colors"><Edit2 className="w-4 h-4" /></button>
-                <button onClick={() => handleDelete(entry.id!)} className="p-1.5 rounded-md hover:bg-theme-bg-secondary text-theme-text-tertiary hover:text-red-400 transition-colors"><Trash2 className="w-4 h-4" /></button>
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => onEdit?.(entry)} className="p-2 rounded-lg hover:bg-blue-500/10 text-theme-text-tertiary hover:text-blue-400 transition-all active:scale-90"><Edit2 className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(entry.id!)} className="p-2 rounded-lg hover:bg-error/10 text-theme-text-tertiary hover:text-error transition-all active:scale-90"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
           ))}
