@@ -13,17 +13,16 @@ import { db } from '../db/database';
 import { WAIST_RATIO_DISPLAY_CATEGORIES } from '../config/constants';
 import { Skeleton, CardSkeleton } from '../components';
 import { CalorieOverview, WeeklyAverages, QuickLogSection } from './components';
-
-interface AnalyticsDashboardProps {
-  userId: string;
-}
+import { useApp } from '../context/AppContext';
 
 /**
  * Main dashboard component providing a high-level overview of all metrics.
  * Refactored for performance via component extraction and memoization.
- * Now correctly accepts userId as a prop for future-proofing multi-user support.
+ * Now correctly uses userId from context.
  */
-export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
+export function AnalyticsDashboard() {
+  const { user } = useApp();
+  const userId = user.id;
   const { metrics, isLoading, error: metricsError, refresh: loadData } = useMetrics(userId);
   const [quickLogType, setQuickLogType] = useState<'weight' | 'waist' | null>(null);
   const [quickLogValue, setQuickLogValue] = useState('');
@@ -163,7 +162,7 @@ export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
       >
-        <PaceCoachCard userId={userId} />
+        <PaceCoachCard />
       </motion.div>
 
       {/* Calorie Summary */}

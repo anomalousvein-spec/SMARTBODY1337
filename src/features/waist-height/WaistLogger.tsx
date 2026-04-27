@@ -7,13 +7,15 @@ import { Card } from '../../components';
 import { validateWaist } from '../../utils/validation';
 import { sanitizeInput } from '../../utils/sanitize';
 import { MIN_WAIST_IN, MAX_WAIST_IN } from '../../config/constants';
+import { useApp } from '../../context/AppContext';
 
 interface WaistLoggerProps {
-  userId: string;
   onWaistLogged?: () => void;
 }
 
-export function WaistLogger({ userId, onWaistLogged }: WaistLoggerProps) {
+export function WaistLogger({ onWaistLogged }: WaistLoggerProps) {
+  const { user } = useApp();
+  const userId = user.id;
   const [measurement, setMeasurement] = useState<string>('');
   const [date, setDate] = useState<string>(formatDateForInput(new Date()));
   const [unit, setUnit] = useState<'in' | 'cm'>('in');

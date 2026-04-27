@@ -6,6 +6,7 @@ import { calculateMovingAverage, calculateBMR } from '../../utils/calculations';
 import { FormMessage } from '../../components/Form';
 import { validateCalories } from '../../utils/validation';
 import { MIN_WEIGHT_ENTRIES_FOR_CHECKIN, TREND_CALCULATION_DAYS } from '../../config/constants';
+import { useTDEESettings } from '../../hooks/useTDEESettings';
 
 interface CheckInFormProps {
   userId: string;
@@ -15,6 +16,7 @@ interface CheckInFormProps {
 }
 
 export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInFormProps) {
+  const { updateSettings } = useTDEESettings(userId);
   const [averageIntake, setAverageIntake] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +60,8 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
       const calculatedTDEE = calculateBackCalculatedTDEE(intake, slope);
 
       // 4. Get BMR for safety floor
-      const weightKg = (settings.currentWeight || sortedWeights[sortedWeights.length-1]) * 0.453592;
+      const lastWeight = sortedWeights[sortedWeights.length-1];
+      const weightKg = settings.heightUnit === 'in' ? lastWeight * 0.453592 : lastWeight;
       const heightCm = settings.heightUnit === 'in' ? settings.height * 2.54 : settings.height;
       const bmr = calculateBMR(weightKg, heightCm, settings.age, settings.gender);
 
@@ -69,7 +72,7 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
         lastSuggestedIntake: settings.lastSuggestedIntake,
         bmr,
         gender: settings.gender,
-        currentWeight: settings.currentWeight || sortedWeights[sortedWeights.length-1]
+        currentWeight: settings.currentWeight || lastWeight
       });
 
       // 6. Save check-in and update settings
@@ -84,12 +87,9 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
 
       await db.pace_coach_checkins.add(checkIn);
 
-      const updatedSettings = {
-        ...settings,
+      await updateSettings({
         lastSuggestedIntake: suggestion,
-        lastUpdated: new Date().toISOString()
-      };
-      await db.tdee_settings.put(updatedSettings);
+      });
 
       onComplete(suggestion);
     } catch (err) {
@@ -98,7 +98,7 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
     } finally {
       setIsSubmitting(false);
     }
-  }, [userId, averageIntake, settings, onComplete]);
+  }, [userId, averageIntake, settings, onComplete, updateSettings]);
 
   return (
     <div className="p-4 bg-theme-bg-tertiary/30 rounded-xl border border-white/5 animate-in fade-in zoom-in duration-300">

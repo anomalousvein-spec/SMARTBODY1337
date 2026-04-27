@@ -1,0 +1,10 @@
+
+> smartbody1337-pwa@1.0.0 dev
+> vite
+
+
+  VITE v7.3.2  ready in 357 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.0.2:5173/
+12:33:46 AM [vite] (client) hmr update /src/styles/index.css, /src/features/pace-coach/PaceCoachCard.tsx
