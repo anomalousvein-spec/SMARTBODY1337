@@ -13,16 +13,16 @@
 }
 
 :root {
-  --bg-primary: #121212;
-  --bg-secondary: #1E1E1E;
-  --bg-tertiary: #2A2A2A;
-  --accent: #4D9EFF;
+  --bg-primary: #0f0f11;
+  --bg-secondary: #1a1a1e;
+  --bg-tertiary: #25252b;
+  --accent: #5ba3ff;
   --text-primary: #ffffff;
-  --text-secondary: #b3b3b3;
-  --text-tertiary: #71717a;
-
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #6b7280;
+  
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
   font-weight: 400;
 
   color-scheme: dark;
@@ -36,21 +36,21 @@
 }
 
 :root[data-theme='jewel'] {
-  --bg-primary: #080C10;
-  --bg-secondary: #16202C;
-  --bg-tertiary: #1E293B;
-  --accent: #3b82f6;
-  --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
+  --bg-primary: #060a0e;
+  --bg-secondary: #111827;
+  --bg-tertiary: #1f2937;
+  --accent: #60a5fa;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --text-tertiary: #6b7280;
 }
 
 :root[data-theme='amoled'] {
   --bg-primary: #000000;
-  --bg-secondary: #121212;
-  --bg-tertiary: #1E1E1E;
-  --accent: #3b82f6;
-  --text-primary: #ffffff;
+  --bg-secondary: #0a0a0a;
+  --bg-tertiary: #171717;
+  --accent: #60a5fa;
+  --text-primary: #fafafa;
   --text-secondary: #a1a1aa;
   --text-tertiary: #52525b;
 }
@@ -83,7 +83,7 @@ body {
 
 /* Smooth transitions for theme changes */
 * {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Focus visible for accessibility */
@@ -91,28 +91,42 @@ button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Glass morphism utility - standardized */
+/* Glass morphism utility - enhanced */
 .glass {
-  background: rgba(30, 30, 30, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(26, 26, 30, 0.5);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='jewel'] .glass {
+  background: rgba(17, 24, 39, 0.5);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 
 :root[data-theme='amoled'] .glass {
-  background: rgba(18, 18, 18, 0.6);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
-/* Custom Card hover state */
+/* Custom Card hover state - refined */
 .card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+}
+
+.card-hover:active {
+  transform: translateY(-1px);
 }
 
 /* Safe area insets for notched devices */

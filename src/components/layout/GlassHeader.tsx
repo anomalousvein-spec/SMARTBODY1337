@@ -16,7 +16,7 @@ export default function GlassHeader({ isStandalone, onToggleTheme }: GlassHeader
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 glass border-b border-white/10 px-4 py-3',
+        'sticky top-0 z-50 glass border-b border-white/10 px-4 py-3.5',
         isStandalone && 'pt-[max(env(safe-area-inset-top),0.75rem)]'
       )}
       role="banner"
@@ -27,7 +27,7 @@ export default function GlassHeader({ isStandalone, onToggleTheme }: GlassHeader
         </h1>
         <button
           onClick={onToggleTheme}
-          className="p-2 rounded-full bg-theme-bg-tertiary/30 hover:bg-theme-bg-tertiary/60 transition-colors"
+          className="p-2.5 rounded-xl bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary/70 transition-all duration-200 hover:scale-105 active:scale-95"
           aria-label="Toggle color theme"
           type="button"
         >

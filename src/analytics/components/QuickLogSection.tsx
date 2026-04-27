@@ -106,7 +106,7 @@ export const QuickLogSection = memo(({
                       value={quickLogValue}
                       onChange={(e) => setQuickLogValue(e.target.value)}
                       placeholder={`Enter ${quickLogType} (${quickLogType === 'weight' ? 'lbs' : 'in'})`}
-                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary/50 text-theme-text-primary focus:ring-2 focus:ring-theme-accent outline-none transition-all"
+                      className="w-full px-4 py-3.5 rounded-xl border border-white/10 bg-theme-bg-tertiary/60 text-theme-text-primary focus:ring-2 focus:ring-theme-accent/50 focus:border-theme-accent/50 outline-none transition-all duration-200 hover:border-white/20"
                       autoFocus
                       required
                     />
@@ -114,14 +114,14 @@ export const QuickLogSection = memo(({
                   <button
                     type="submit"
                     disabled={isSaving || !quickLogValue}
-                    className="p-3 bg-theme-accent hover:opacity-90 disabled:opacity-50 text-white rounded-xl transition-all active:scale-90"
+                    className="p-3 bg-theme-accent hover:bg-theme-accent/90 disabled:opacity-50 text-white rounded-xl transition-all duration-200 active:scale-90 shadow-lg shadow-theme-accent/25 hover:shadow-xl hover:shadow-theme-accent/30"
                   >
                     {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle className="w-6 h-6" />}
                   </button>
                   <button
                     type="button"
                     onClick={() => { setQuickLogType(null); setQuickLogValue(''); }}
-                    className="p-3 bg-theme-bg-tertiary hover:bg-theme-bg-tertiary/80 text-theme-text-secondary rounded-xl transition-all"
+                    className="p-3 bg-theme-bg-tertiary hover:bg-theme-bg-tertiary/80 text-theme-text-secondary rounded-xl transition-all duration-200 hover:text-theme-text-primary"
                   >
                     ✕
                   </button>
