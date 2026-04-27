@@ -52,7 +52,7 @@ export function TDEECalculator() {
       setGender(fullSettings.gender);
       setHeight(fullSettings.height.toString());
       setHeightUnit(fullSettings.heightUnit);
-      setWeight(fullSettings.currentWeight.toString());
+      setWeight(fullSettings.currentWeight?.toString() || '');
       setActivityLevel(fullSettings.activityLevel);
       setTargetWeight(fullSettings.targetWeight?.toString() || '');
       setTargetLossRate(fullSettings.targetLossRate?.toString() || '');
