@@ -119,3 +119,59 @@ export function getWaistToHeightDisplayCategory(ratio: number): { label: string;
 export function normalizeMeasurement(value: number, unit: 'in' | 'cm'): number {
   return unit === 'in' ? value * INCHES_TO_CM : value;
 }
+
+/**
+ * Dynamic Phase Labeling system
+ * Determines user's current phase based on TDEE settings
+ */
+export interface PhaseInfo {
+  type: 'cutting' | 'maintenance' | 'surplus';
+  label: string;
+  colorClass: string;
+  bgClass: string;
+}
+
+export function getUserPhase(
+  currentWeight: number | undefined,
+  targetWeight: number | undefined,
+  targetLossRate: number | undefined
+): PhaseInfo {
+  // Default to cutting if no data available
+  if (currentWeight === undefined || targetWeight === undefined || targetLossRate === undefined) {
+    return {
+      type: 'cutting',
+      label: 'Cutting Target',
+      colorClass: 'text-theme-accent',
+      bgClass: 'bg-theme-accent/10'
+    };
+  }
+
+  // Maintenance: targetLossRate === 0 OR weights are within 0.5 lbs
+  const isWeightDiffNegligible = Math.abs(currentWeight - targetWeight) < 0.5;
+  if (targetLossRate === 0 || isWeightDiffNegligible) {
+    return {
+      type: 'maintenance',
+      label: 'Maintenance Target',
+      colorClass: 'text-green-500',
+      bgClass: 'bg-green-500/10'
+    };
+  }
+
+  // Surplus: negative loss rate (means gain) OR target > current
+  if (targetLossRate < 0 || targetWeight > currentWeight) {
+    return {
+      type: 'surplus',
+      label: 'Surplus Target',
+      colorClass: 'text-blue-500',
+      bgClass: 'bg-blue-500/10'
+    };
+  }
+
+  // Cutting: targetWeight < currentWeight AND targetLossRate > 0
+  return {
+    type: 'cutting',
+    label: 'Cutting Target',
+    colorClass: 'text-theme-accent',
+    bgClass: 'bg-theme-accent/10'
+  };
+}

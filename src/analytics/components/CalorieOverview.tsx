@@ -3,12 +3,20 @@ import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 import { Metrics } from '../../hooks/useMetrics';
 import { Card } from '../../components';
+import { getUserPhase } from '../../utils/calculations';
 
 interface CalorieOverviewProps {
   metrics: Metrics | null;
 }
 
 export const CalorieOverview = memo(({ metrics }: CalorieOverviewProps) => {
+  // Calculate dynamic phase based on user's TDEE settings
+  const phase = getUserPhase(
+    metrics?.currentWeight,
+    metrics?.targetWeight,
+    metrics?.targetLossRate
+  );
+
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
       <Card className="card-hover">
@@ -19,10 +27,10 @@ export const CalorieOverview = memo(({ metrics }: CalorieOverviewProps) => {
             <div className="text-xl font-bold text-theme-text-primary">{Math.round(metrics?.maintenanceCalories ?? 2000)}</div>
             <div className="text-xs text-theme-text-tertiary">cal/day</div>
           </div>
-          <div className="text-center p-3 bg-theme-accent/10 rounded-lg">
-            <div className="text-xs text-theme-accent mb-1">Cutting Target</div>
-            <div className="text-xl font-bold text-theme-accent">{Math.round(metrics?.cuttingCalories ?? 1500)}</div>
-            <div className="text-xs text-theme-accent">cal/day</div>
+          <div className={`text-center p-3 ${phase.bgClass} rounded-lg`}>
+            <div className={`text-xs ${phase.colorClass} mb-1`}>{phase.label}</div>
+            <div className={`text-xl font-bold ${phase.colorClass}`}>{Math.round(metrics?.cuttingCalories ?? 1500)}</div>
+            <div className={`text-xs ${phase.colorClass}`}>cal/day</div>
           </div>
         </div>
         {metrics?.todayMacros && (
