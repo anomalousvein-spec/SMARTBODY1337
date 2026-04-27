@@ -21,7 +21,9 @@ export function useWeights(userId: string, startDate?: Date, endDate?: Date) {
       const endStr = endDate ? endDate.toISOString() : '9';
 
       const results = await query.between([userId, startStr], [userId, endStr]).toArray();
-      setWeights(results);
+      // Sort by date to ensure chronological order (oldest first)
+      const sortedResults = results.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      setWeights(sortedResults);
     } catch (error) {
       console.error('Error loading weights:', error);
     } finally {
