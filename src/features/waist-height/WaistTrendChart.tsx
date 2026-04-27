@@ -23,14 +23,14 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 interface WaistTrendChartProps {
-  userId: string;
   startDate?: Date;
   endDate?: Date;
 }
 
-export function WaistTrendChart({ userId, startDate, endDate }: WaistTrendChartProps) {
+export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
+  const { user, theme } = useApp();
+  const userId = user.id;
   const { measurements: waistEntries, isLoading } = useWaistMeasurements(userId, startDate, endDate);
-  const { theme } = useApp();
   const [chartColors, setChartColors] = useState({
     accent: '#a855f7',
     text: '#71717a',

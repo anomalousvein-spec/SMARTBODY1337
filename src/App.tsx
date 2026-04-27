@@ -33,7 +33,6 @@ const LoadingFallback = () => (
 );
 
 const AnimatedRoutes = () => {
-  const { user } = useApp();
   const location = useLocation();
   const { editingWeight, startEditing, clearEditing } = useEditWeight();
 
@@ -42,31 +41,31 @@ const AnimatedRoutes = () => {
       <ErrorBoundary>
         <Suspense fallback={<LoadingFallback />}>
           <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<PageTransition><AnalyticsDashboard userId={user.id} /></PageTransition>} />
+            <Route path="/" element={<PageTransition><AnalyticsDashboard /></PageTransition>} />
             <Route path="/weight" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <WeightLogger userId={user.id} editingEntry={editingWeight} onCancelEdit={clearEditing} onWeightLogged={clearEditing} />
-                  <WeightChart userId={user.id} onEdit={startEditing} />
-                  <WeightAnalytics userId={user.id} />
+                  <WeightLogger editingEntry={editingWeight} onCancelEdit={clearEditing} onWeightLogged={clearEditing} />
+                  <WeightChart onEdit={startEditing} />
+                  <WeightAnalytics />
                 </div>
               </PageTransition>
             } />
             <Route path="/waist" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <WaistLogger userId={user.id} />
-                  <WaistRatioDisplay userId={user.id} height={70} heightUnit="in" />
-                  <WaistTrendChart userId={user.id} />
+                  <WaistLogger />
+                  <WaistRatioDisplay />
+                  <WaistTrendChart />
                 </div>
               </PageTransition>
             } />
-            <Route path="/tdee" element={<PageTransition><TDEECalculator userId={user.id} /></PageTransition>} />
+            <Route path="/tdee" element={<PageTransition><TDEECalculator /></PageTransition>} />
             <Route path="/macros" element={
               <PageTransition>
                 <div className="space-y-6">
-                  <MacroLogger userId={user.id} />
-                  <MacroSummary userId={user.id} />
+                  <MacroLogger />
+                  <MacroSummary />
                 </div>
               </PageTransition>
             } />
@@ -101,6 +100,7 @@ function AppContent() {
     mediaQuery.addEventListener('change', handleDisplayModeChange);
 
     document.documentElement.classList.add('dark');
+    document.documentElement.setAttribute('data-theme', 'default');
     document.documentElement.setAttribute('data-display-mode', isStandalone ? 'standalone' : 'browser');
 
     return () => {

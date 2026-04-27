@@ -4,13 +4,11 @@ import { Skeleton, Card } from '../../components';
 import { CheckInForm } from './CheckInForm';
 import { usePaceCoach } from '../../hooks/usePaceCoach';
 import { MIN_CHECKINS_FOR_METABOLISM } from '../../config/constants';
+import { useApp } from '../../context/AppContext';
 
-interface PaceCoachCardProps {
-  userId: string;
-}
-
-export function PaceCoachCard({ userId }: PaceCoachCardProps) {
-  const { settings, lastCheckIn, checkInCount, showCheckInForm, setShowCheckInForm, isLoading, refresh } = usePaceCoach(userId);
+export function PaceCoachCard() {
+  const { user } = useApp();
+  const { settings, lastCheckIn, checkInCount, showCheckInForm, setShowCheckInForm, isLoading, refresh } = usePaceCoach(user.id);
 
   if (isLoading) return <Card className="h-48"><Skeleton className="h-full" /></Card>;
   if (!settings || !settings.paceCoachEnabled) return null;
@@ -35,7 +33,12 @@ export function PaceCoachCard({ userId }: PaceCoachCardProps) {
       </div>
 
       {showCheckInForm ? (
-        <CheckInForm userId={userId} settings={settings} onComplete={handleComplete} onCancel={() => setShowCheckInForm(false)} />
+        <CheckInForm
+          userId={user.id}
+          settings={settings}
+          onComplete={handleComplete}
+          onCancel={() => setShowCheckInForm(false)}
+        />
       ) : (
         <div className="space-y-4">
           {checkInCount < MIN_CHECKINS_FOR_METABOLISM ? (

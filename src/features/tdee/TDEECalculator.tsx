@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { db } from '../../db/database';
-import { TDEESettings } from '../../db/models';
 import { calculateBMR, calculateTDEE } from '../../utils/calculations';
 import { InputField, SelectField, FormMessage, SubmitButton } from '../../components/Form';
-import { Card } from '../../components';
+import { Card, Skeleton } from '../../components';
 import { validateAge, validateHeight, validateWeight } from '../../utils/validation';
 import {
   MIN_AGE, MAX_AGE,
@@ -11,11 +9,9 @@ import {
   LBS_TO_KG, KG_TO_LBS
 } from '../../config/constants';
 import { PaceCoachSettings } from '../pace-coach/PaceCoachSettings';
-
-interface TDEECalculatorProps {
-  userId: string;
-  currentWeight?: number;
-}
+import { useApp } from '../../context/AppContext';
+import { useTDEESettings } from '../../hooks/useTDEESettings';
+import { TDEESettings } from '../../db/models';
 
 const ACTIVITY_LEVELS = [
   { value: 'sedentary', label: 'Sedentary (Office job, little exercise)' },
@@ -25,7 +21,11 @@ const ACTIVITY_LEVELS = [
   { value: 'extra_active', label: 'Extra Active (Professional athlete, physical job)' },
 ];
 
-export function TDEECalculator({ userId, currentWeight }: TDEECalculatorProps) {
+export function TDEECalculator() {
+  const { user } = useApp();
+  const userId = user.id;
+  const { settings: fullSettings, isLoading, updateSettings } = useTDEESettings(userId);
+
   const [age, setAge] = useState('30');
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [height, setHeight] = useState('70');
@@ -37,45 +37,31 @@ export function TDEECalculator({ userId, currentWeight }: TDEECalculatorProps) {
   const [targetLossRate, setTargetLossRate] = useState('1');
 
   const [isSaving, setIsSaving] = useState(false);
-  const [hasSettings, setHasSettings] = useState(false);
-  const [fullSettings, setFullSettings] = useState<TDEESettings | null>(null);
   const [results, setResults] = useState<{ bmr: number; tdee: number; cuttingCalories: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    const loadSettings = async () => {
-      const s = await db.tdee_settings.get('global');
-      if (s) {
-        setAge(s.age.toString());
-        setGender(s.gender);
-        setHeight(s.height.toString());
-        setHeightUnit(s.heightUnit);
-        setWeight(s.currentWeight?.toString() || '180');
-        setWeightUnit(s.heightUnit === 'in' ? 'lbs' : 'kg');
-        setActivityLevel(s.activityLevel);
-        setTargetWeight(s.targetWeight?.toString() || '');
-        setTargetLossRate(s.targetLossRate?.toString() || '1');
-        setHasSettings(true);
-        setFullSettings(s);
+    if (fullSettings) {
+      setAge(fullSettings.age.toString());
+      setGender(fullSettings.gender);
+      setHeight(fullSettings.height.toString());
+      setHeightUnit(fullSettings.heightUnit);
+      setWeight(fullSettings.currentWeight?.toString() || '180');
+      setWeightUnit(fullSettings.heightUnit === 'in' ? 'lbs' : 'kg');
+      setActivityLevel(fullSettings.activityLevel);
+      setTargetWeight(fullSettings.targetWeight?.toString() || '');
+      setTargetLossRate(fullSettings.targetLossRate?.toString() || '1');
 
-        const currentWeightVal = s.currentWeight || 180;
-        const weightKg = s.heightUnit === 'in' ? currentWeightVal * LBS_TO_KG : currentWeightVal;
-        const heightCm = s.heightUnit === 'in' ? s.height * INCHES_TO_CM : s.height;
-        const bmr = calculateBMR(weightKg, heightCm, s.age, s.gender);
-        const tdee = calculateTDEE(bmr, s.activityLevel);
-        const cuttingCalories = s.cuttingCalories || (tdee - 500);
-        setResults({ bmr, tdee, cuttingCalories });
-      }
-    };
-    loadSettings();
-  }, []);
-
-  useEffect(() => {
-    if (currentWeight && hasSettings) {
-      setWeight(currentWeight.toString());
+      const currentWeightVal = fullSettings.currentWeight || 180;
+      const weightKg = fullSettings.heightUnit === 'in' ? currentWeightVal * LBS_TO_KG : currentWeightVal;
+      const heightCm = fullSettings.heightUnit === 'in' ? fullSettings.height * INCHES_TO_CM : fullSettings.height;
+      const bmr = calculateBMR(weightKg, heightCm, fullSettings.age, fullSettings.gender);
+      const tdee = calculateTDEE(bmr, fullSettings.activityLevel);
+      const cuttingCalories = fullSettings.cuttingCalories || (tdee - 500);
+      setResults({ bmr, tdee, cuttingCalories });
     }
-  }, [currentWeight, hasSettings]);
+  }, [fullSettings]);
 
   const handleWeightUnitChange = useCallback((newUnit: string) => {
     const val = parseFloat(weight);
@@ -121,10 +107,13 @@ export function TDEECalculator({ userId, currentWeight }: TDEECalculatorProps) {
       const targetWeightValue = targetWeight ? parseFloat(targetWeight) : undefined;
       const targetLossRateValue = targetLossRate ? parseFloat(targetLossRate) : undefined;
 
-      const settings: TDEESettings = {
-        ...fullSettings,
-        id: 'global',
-        user_id: userId,
+      const weightKg = weightUnit === 'lbs' ? weightValue * LBS_TO_KG : weightValue;
+      const heightCm = heightUnit === 'in' ? heightValue * INCHES_TO_CM : heightValue;
+      const bmr = calculateBMR(weightKg, heightCm, ageValue, gender);
+      const tdee = calculateTDEE(bmr, activityLevel);
+      const cuttingCalories = tdee - 500;
+
+      await updateSettings({
         age: ageValue,
         gender,
         height: heightValue,
@@ -133,19 +122,11 @@ export function TDEECalculator({ userId, currentWeight }: TDEECalculatorProps) {
         currentWeight: weightValue,
         targetWeight: targetWeightValue,
         targetLossRate: targetLossRateValue,
-        lastUpdated: new Date().toISOString(),
-      };
+        tdee,
+        cuttingCalories
+      });
 
-      await db.tdee_settings.put(settings);
-      setFullSettings(settings);
-      setHasSettings(true);
       setSuccess(true);
-
-      const weightKg = weightUnit === 'lbs' ? weightValue * LBS_TO_KG : weightValue;
-      const heightCm = heightUnit === 'in' ? heightValue * INCHES_TO_CM : heightValue;
-      const bmr = calculateBMR(weightKg, heightCm, ageValue, gender);
-      const tdee = calculateTDEE(bmr, activityLevel);
-      const cuttingCalories = tdee - 500;
       setResults({ bmr, tdee, cuttingCalories });
     } catch (err) {
       console.error('Failed to save TDEE settings:', err);
@@ -154,6 +135,8 @@ export function TDEECalculator({ userId, currentWeight }: TDEECalculatorProps) {
       setIsSaving(false);
     }
   };
+
+  if (isLoading) return <Card className="card-hover"><Skeleton className="h-96" /></Card>;
 
   return (
     <Card className="card-hover">
@@ -185,9 +168,14 @@ export function TDEECalculator({ userId, currentWeight }: TDEECalculatorProps) {
         {error && <FormMessage type="error" message={error} />}
         {success && <FormMessage type="success" message="Profile updated!" />}
 
-        <SubmitButton isSubmitting={isSaving} idleText={hasSettings ? 'Update Profile' : 'Calculate TDEE'} />
+        <SubmitButton isSubmitting={isSaving} idleText={fullSettings ? 'Update Profile' : 'Calculate TDEE'} />
 
-        {fullSettings && <PaceCoachSettings settings={fullSettings} onUpdate={setFullSettings} />}
+        {fullSettings && (
+          <PaceCoachSettings
+            settings={fullSettings}
+            onUpdate={(updated) => updateSettings(updated)}
+          />
+        )}
       </form>
 
       {results && (

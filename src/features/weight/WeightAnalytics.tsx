@@ -4,14 +4,16 @@ import { MOVING_AVERAGE_DAYS } from '../../config/constants';
 import { useWeights } from '../../hooks/useWeights';
 import { Card, Skeleton } from '../../components';
 import { WeightEntry } from '../../db/models';
+import { useApp } from '../../context/AppContext';
+import { useTDEESettings } from '../../hooks/useTDEESettings';
 
-interface WeightAnalyticsProps {
-  userId: string;
-  targetWeight?: number;
-}
+export function WeightAnalytics() {
+  const { user } = useApp();
+  const userId = user.id;
+  const { weights, isLoading: weightsLoading } = useWeights(userId);
+  const { settings, isLoading: settingsLoading } = useTDEESettings(userId);
 
-export function WeightAnalytics({ userId, targetWeight }: WeightAnalyticsProps) {
-  const { weights, isLoading } = useWeights(userId);
+  const targetWeight = settings?.targetWeight;
 
   const analytics = useMemo(() => {
     if (weights.length === 0) return null;
@@ -30,7 +32,7 @@ export function WeightAnalytics({ userId, targetWeight }: WeightAnalyticsProps) 
     };
   }, [weights, targetWeight]);
 
-  if (isLoading) return <Card className="card-hover"><Skeleton className="h-48" /></Card>;
+  if (weightsLoading || settingsLoading) return <Card className="card-hover"><Skeleton className="h-48" /></Card>;
   if (!analytics) return <Card className="card-hover"><p className="text-center text-theme-text-tertiary py-8">Log your first weight to see analytics!</p></Card>;
 
   const isPositiveProgress = analytics.totalLoss >= 0;

@@ -24,16 +24,16 @@ import {
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 interface WeightChartProps {
-  userId: string;
   startDate?: Date;
   endDate?: Date;
   onEdit?: (entry: WeightEntry) => void;
   onDelete?: (id: number) => void;
 }
 
-export function WeightChart({ userId, startDate, endDate, onEdit, onDelete }: WeightChartProps) {
+export function WeightChart({ startDate, endDate, onEdit, onDelete }: WeightChartProps) {
+  const { user, theme } = useApp();
+  const userId = user.id;
   const { weights, isLoading, refresh } = useWeights(userId, startDate, endDate);
-  const { theme } = useApp();
   const [chartColors, setChartColors] = useState({
     accent: '#4D9EFF',
     text: '#71717a',

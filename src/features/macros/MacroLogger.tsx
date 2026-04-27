@@ -6,13 +6,15 @@ import { InputField, TextAreaField, FormMessage, SubmitButton } from '../../comp
 import { Card } from '../../components';
 import { validateCalories, validateMacro } from '../../utils/validation';
 import { sanitizeInput } from '../../utils/sanitize';
+import { useApp } from '../../context/AppContext';
 
 interface MacroLoggerProps {
-  userId: string;
   onMacroLogged?: () => void;
 }
 
-export function MacroLogger({ userId, onMacroLogged }: MacroLoggerProps) {
+export function MacroLogger({ onMacroLogged }: MacroLoggerProps) {
+  const { user } = useApp();
+  const userId = user.id;
   const [calories, setCalories] = useState<string>('');
   const [protein, setProtein] = useState<string>('');
   const [carbs, setCarbs] = useState<string>('');

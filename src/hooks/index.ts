@@ -4,3 +4,4 @@ export * from './useLocalStorage';
 export * from './useWeights';
 export * from './useWaistMeasurements';
 export * from './useMacroLogs';
+export * from './useTDEESettings';

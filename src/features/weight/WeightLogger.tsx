@@ -7,15 +7,17 @@ import { Card } from '../../components';
 import { validateWeight } from '../../utils/validation';
 import { sanitizeInput } from '../../utils/sanitize';
 import { MIN_WEIGHT_LBS, MAX_WEIGHT_LBS } from '../../config/constants';
+import { useApp } from '../../context/AppContext';
 
 interface WeightLoggerProps {
-  userId: string;
   onWeightLogged?: () => void;
   editingEntry?: WeightEntry | null;
   onCancelEdit?: () => void;
 }
 
-export function WeightLogger({ userId, onWeightLogged, editingEntry, onCancelEdit }: WeightLoggerProps) {
+export function WeightLogger({ onWeightLogged, editingEntry, onCancelEdit }: WeightLoggerProps) {
+  const { user } = useApp();
+  const userId = user.id;
   const [weight, setWeight] = useState<string>('');
   const [date, setDate] = useState<string>(formatDateForInput(new Date()));
   const [unit, setUnit] = useState<'lbs' | 'kg'>('lbs');

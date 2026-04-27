@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { db } from '../db/database';
-import { WeightEntry, WaistEntry, MacroEntry, TDEESettings } from '../db/models';
+import { useCallback, useMemo } from 'react';
+import { WeightEntry, WaistEntry, MacroEntry } from '../db/models';
 import { DEFAULT_USER_ID, INCHES_TO_CM, DEFAULT_MAINTENANCE_CALORIES, DEFAULT_CUTTING_CALORIES } from '../config/constants';
 import { useWeights } from './useWeights';
 import { useWaistMeasurements } from './useWaistMeasurements';
 import { useMacroLogs } from './useMacroLogs';
+import { useTDEESettings } from './useTDEESettings';
 
 export interface Metrics {
   latestWeight: WeightEntry | null;
@@ -26,28 +26,7 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
   const { weights, isLoading: weightsLoading, refresh: refreshWeights } = useWeights(userId);
   const { measurements: waist, isLoading: waistLoading, refresh: refreshWaist } = useWaistMeasurements(userId);
   const { logs: macros, isLoading: macrosLoading, refresh: refreshMacros } = useMacroLogs(userId);
-
-  const [settings, setSettings] = useState<TDEESettings | undefined>(undefined);
-  const [settingsLoading, setSettingsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadSettings = useCallback(async () => {
-    try {
-      setSettingsLoading(true);
-      setError(null);
-      const res = await db.tdee_settings.get('global');
-      setSettings(res);
-    } catch (err) {
-      console.error('Error loading settings:', err);
-      setError('Failed to load user settings');
-    } finally {
-      setSettingsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+  const { settings, isLoading: settingsLoading, refresh: refreshSettings, error: settingsError } = useTDEESettings(userId);
 
   const isLoading = weightsLoading || waistLoading || macrosLoading || settingsLoading;
 
@@ -56,12 +35,12 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
       refreshWeights(),
       refreshWaist(),
       refreshMacros(),
-      loadSettings()
+      refreshSettings()
     ]);
-  }, [refreshWeights, refreshWaist, refreshMacros, loadSettings]);
+  }, [refreshWeights, refreshWaist, refreshMacros, refreshSettings]);
 
   const metrics = useMemo<Metrics | null>(() => {
-    if (weightsLoading || waistLoading || macrosLoading || settingsLoading) return null;
+    if (isLoading) return null;
 
     const latestWeight = weights[weights.length - 1] || null;
     const latestWaist = waist[waist.length - 1] || null;
@@ -111,7 +90,7 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
       weeklyAvgCalories,
       weeklyAvgProtein
     };
-  }, [weights, waist, macros, settings, weightsLoading, waistLoading, macrosLoading, settingsLoading]);
+  }, [weights, waist, macros, settings, isLoading]);
 
-  return { metrics, isLoading, error, refresh };
+  return { metrics, isLoading, error: settingsError, refresh };
 }
