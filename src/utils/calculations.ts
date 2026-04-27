@@ -18,6 +18,107 @@ export function calculateBMR(
   return 10 * weight + 6.25 * height - 5 * age + genderOffset;
 }
 
+/**
+ * Advanced BMR calculation using averaged Navy + RFM body fat estimate
+ * and Katch-McArdle formula based on Lean Body Mass
+ */
+export interface AdvancedBMRResult {
+  bmr: number;
+  rfmBodyFat: number;
+  navyBodyFat: number;
+  avgBodyFat: number;
+  leanBodyMass: number;
+  waistToHeightRatio: number;
+}
+
+export interface AdvancedMacroTargets {
+  proteinMin: number;
+  proteinMax: number;
+  fatMin: number;
+  remainingCalories: number;
+}
+
+export function calculateAdvancedBMR(
+  weightKg: number,
+  heightCm: number,
+  waistCm: number,
+  neckCm: number,
+  hipCm: number | undefined,
+  gender: 'male' | 'female'
+): AdvancedBMRResult {
+  // Step A: Calculate RFM Body Fat
+  const rfmBodyFat = gender === 'male' 
+    ? 64 - (20 * (heightCm / waistCm))
+    : 76 - (20 * (heightCm / waistCm));
+
+  // Step B: Calculate Navy Body Fat
+  let navyBodyFat: number;
+  if (gender === 'male') {
+    navyBodyFat = 495 / (1.0324 - 0.19077 * Math.log10(waistCm - neckCm) + 0.15456 * Math.log10(heightCm)) - 450;
+  } else {
+    // Female requires hip measurement
+    if (hipCm === undefined || hipCm <= 0) {
+      // Fallback to male formula if hip not provided (shouldn't happen in UI)
+      navyBodyFat = 495 / (1.0324 - 0.19077 * Math.log10(waistCm - neckCm) + 0.15456 * Math.log10(heightCm)) - 450;
+    } else {
+      navyBodyFat = 495 / (1.29579 - 0.35004 * Math.log10(waistCm + hipCm - neckCm) + 0.22100 * Math.log10(heightCm)) - 450;
+    }
+  }
+
+  // Step C: Average Body Fat
+  const avgBodyFat = (rfmBodyFat + navyBodyFat) / 2;
+
+  // Cap body fat at realistic minimums to prevent unsafe BMR calculations
+  const cappedAvgBodyFat = Math.max(avgBodyFat, gender === 'male' ? 3 : 8);
+
+  // Step 3: Calculate LBM and BMR using Katch-McArdle
+  const leanBodyMass = weightKg * (1 - (cappedAvgBodyFat / 100));
+  const bmr = 370 + (21.6 * leanBodyMass);
+
+  // Calculate Waist-to-Height Ratio
+  const waistToHeightRatio = waistCm / heightCm;
+
+  return {
+    bmr,
+    rfmBodyFat,
+    navyBodyFat,
+    avgBodyFat: cappedAvgBodyFat,
+    leanBodyMass,
+    waistToHeightRatio
+  };
+}
+
+/**
+ * Calculate advanced macro targets based on LBM and goal weight
+ */
+export function calculateAdvancedMacros(
+  leanBodyMassKg: number,
+  goalWeightLbs: number | undefined,
+  bmr: number,
+  tdee: number,
+  targetCalories: number
+): AdvancedMacroTargets {
+  // Protein: 2.0g to 2.5g per kg of LBM
+  const proteinMin = leanBodyMassKg * 2.0;
+  const proteinMax = leanBodyMassKg * 2.5;
+
+  // Fat Floor: 0.3g per lb of goal weight (or current weight if goal not set)
+  const effectiveGoalWeight = goalWeightLbs || (leanBodyMassKg * 2.2 / (1 - 0.15)); // Estimate if not provided
+  const fatMin = effectiveGoalWeight * 0.3;
+
+  // Calculate remaining calories after protein and fat floors
+  const proteinCalories = proteinMin * 4; // 4 cal per gram
+  const fatCalories = fatMin * 9; // 9 cal per gram
+  const remainingCalories = targetCalories - proteinCalories - fatCalories;
+
+  return {
+    proteinMin,
+    proteinMax,
+    fatMin,
+    remainingCalories: Math.max(remainingCalories, 0)
+  };
+}
+
 export function calculateTDEE(
   bmr: number,
   activityLevel: keyof typeof ACTIVITY_MULTIPLIERS
