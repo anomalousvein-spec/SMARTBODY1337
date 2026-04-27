@@ -16,12 +16,12 @@ export const CalorieOverview = memo(({ metrics }: CalorieOverviewProps) => {
         <div className="grid grid-cols-2 gap-4">
           <div className="text-center p-3 bg-theme-bg-tertiary/50 rounded-lg">
             <div className="text-xs text-theme-text-tertiary mb-1">Maintenance</div>
-            <div className="text-xl font-bold text-theme-text-primary">{metrics?.maintenanceCalories ?? 2000}</div>
+            <div className="text-xl font-bold text-theme-text-primary">{Math.round(metrics?.maintenanceCalories ?? 2000)}</div>
             <div className="text-xs text-theme-text-tertiary">cal/day</div>
           </div>
           <div className="text-center p-3 bg-theme-accent/10 rounded-lg">
             <div className="text-xs text-theme-accent mb-1">Cutting Target</div>
-            <div className="text-xl font-bold text-theme-accent">{metrics?.cuttingCalories ?? 1500}</div>
+            <div className="text-xl font-bold text-theme-accent">{Math.round(metrics?.cuttingCalories ?? 1500)}</div>
             <div className="text-xs text-theme-accent">cal/day</div>
           </div>
         </div>

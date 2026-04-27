@@ -81,7 +81,8 @@ export function InputField({
           "w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary/50 text-theme-text-primary outline-none transition-all",
           "focus:ring-2 focus:ring-theme-accent focus:border-transparent",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          error && "border-red-500/50 focus:ring-red-500/50"
+          error && "border-red-500/50 focus:ring-red-500/50",
+          type === "date" && "text-sm"
         )}
       />
       {error && (
