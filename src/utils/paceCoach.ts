@@ -2,6 +2,8 @@
  * Pace Coach calculation logic
  */
 
+import { WeeklyMetrics } from '../db/models';
+
 /**
  * Calculates the slope of weight change using linear regression.
  * Returns the average weight change per day.
@@ -148,6 +150,39 @@ export function formatDate(date: Date | string): string {
 }
 
 /**
+ * Gets the ISO week number for a given date.
+ * Returns format: "YYYY-Www" (e.g., "2024-W01")
+ */
+export function getISOWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Gets the start and end dates of an ISO week.
+ * @param isoWeek ISO week format: "YYYY-Www"
+ * @returns Object with start and end dates of the week
+ */
+export function getISOWeekDates(isoWeek: string): { start: Date; end: Date } {
+  const [year, week] = isoWeek.split('-W').map(Number);
+  const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+  const dow = simple.getUTCDay();
+  const ISOweekStart = new Date(simple);
+  if (dow <= 4) {
+    ISOweekStart.setUTCDate(simple.getUTCDate() - simple.getUTCDay() + 1);
+  } else {
+    ISOweekStart.setUTCDate(simple.getUTCDate() + 8 - simple.getUTCDay());
+  }
+  const ISOweekEnd = new Date(ISOweekStart);
+  ISOweekEnd.setUTCDate(ISOweekStart.getUTCDate() + 6);
+  return { start: ISOweekStart, end: ISOweekEnd };
+}
+
+/**
  * Calculates average daily calorie intake from macro logs over a specified period.
  * @param macroLogs Array of macro log entries
  * @param daysToAverage Number of days to average over (default: 14)
@@ -191,4 +226,133 @@ export function calculateAverageIntakeFromLogs(
     hasSufficientData,
     daysLogged: recentLogs.length
   };
+}
+
+/**
+ * Calculates weekly compliance metrics for a given ISO week.
+ * Implements Module 4 compliance scoring from the original spec.
+ * 
+ * @param userId User ID
+ * @param isoWeek ISO week format: "YYYY-Www"
+ * @param targetCalories Daily calorie target for the week
+ * @returns WeeklyMetrics object ready for storage
+ */
+export async function calculateWeeklyCompliance(
+  userId: string,
+  isoWeek: string,
+  targetCalories: number
+): Promise<WeeklyMetrics> {
+  const { db } = await import('../db/database');
+  const { getISOWeekDates } = await import('./paceCoach');
+  
+  const { start, end } = getISOWeekDates(isoWeek);
+  
+  // Get macro logs for the week
+  const macroLogs = await db.macro_logs
+    .where('[user_id+date]')
+    .between([userId, start.toISOString()], [userId, end.toISOString()], true, true)
+    .toArray();
+  
+  // Get weight logs for the week
+  const weightLogs = await db.weights
+    .where('[user_id+date]')
+    .between([userId, start.toISOString()], [userId, end.toISOString()], true, true)
+    .toArray();
+  
+  // Calculate compliance
+  let compliantDays = 0;
+  let totalCalories = 0;
+  const loggedDaysSet = new Set<string>();
+  
+  macroLogs.forEach(log => {
+    const logDate = new Date(log.date).toDateString();
+    loggedDaysSet.add(logDate);
+    totalCalories += log.calories;
+    
+    // Check if within ±100 kcal of target
+    if (Math.abs(log.calories - targetCalories) <= 100) {
+      compliantDays++;
+    }
+  });
+  
+  const loggedDays = loggedDaysSet.size;
+  const complianceScore = loggedDays > 0 ? compliantDays / loggedDays : 0;
+  const avgCaloriesLogged = loggedDays > 0 ? Math.round(totalCalories / loggedDays) : 0;
+  
+  // Determine eligibility per Module 4 spec
+  // Compliant if: score >= 0.8 AND logged_days >= 4
+  const isCompliant = complianceScore >= 0.8 && loggedDays >= 4;
+  const hasMinWeighIns = weightLogs.length >= 2; // Minimum for Tier 2
+  
+  let adjustmentEligible = false;
+  let holdReason: 'NON_COMPLIANT_HOLD' | 'INSUFFICIENT_DATA_HOLD' | null = null;
+  
+  if (!isCompliant) {
+    holdReason = 'NON_COMPLIANT_HOLD';
+  } else if (!hasMinWeighIns) {
+    holdReason = 'INSUFFICIENT_DATA_HOLD';
+  } else {
+    adjustmentEligible = true;
+  }
+  
+  return {
+    user_id: userId,
+    iso_week: isoWeek,
+    logged_days: loggedDays,
+    compliant_days: compliantDays,
+    compliance_score: Math.round(complianceScore * 100) / 100,
+    avg_calories_logged: avgCaloriesLogged,
+    target_calories: targetCalories,
+    weight_logs_count: weightLogs.length,
+    adjustment_eligible: adjustmentEligible,
+    hold_reason: holdReason,
+    created_at: new Date().toISOString()
+  };
+}
+
+/**
+ * Processes all active users and generates weekly metrics for the prior ISO week.
+ * Should be called weekly (e.g., Monday at 00:05 UTC).
+ * 
+ * @param userIds Array of user IDs to process
+ * @param targetCaloriesMap Map of user_id -> target calories
+ * @returns Array of generated WeeklyMetrics
+ */
+export async function processWeeklyMetricsForUsers(
+  userIds: string[],
+  targetCaloriesMap: Map<string, number>
+): Promise<WeeklyMetrics[]> {
+  const { db } = await import('../db/database');
+  const { getISOWeek } = await import('./paceCoach');
+  
+  // Get prior week's ISO week identifier
+  const today = new Date();
+  const priorWeekDate = new Date(today);
+  priorWeekDate.setDate(today.getDate() - 7);
+  const priorIsoWeek = getISOWeek(priorWeekDate);
+  
+  const results: WeeklyMetrics[] = [];
+  
+  for (const userId of userIds) {
+    const targetCalories = targetCaloriesMap.get(userId);
+    if (!targetCalories) continue;
+    
+    // Check if already processed
+    const existing = await db.weekly_metrics
+      .where('[user_id+iso_week]')
+      .equals([userId, priorIsoWeek])
+      .first();
+    
+    if (existing) continue; // Skip if already processed
+    
+    try {
+      const metrics = await calculateWeeklyCompliance(userId, priorIsoWeek, targetCalories);
+      await db.weekly_metrics.add(metrics);
+      results.push(metrics);
+    } catch (error) {
+      console.error(`Error processing weekly metrics for user ${userId}:`, error);
+    }
+  }
+  
+  return results;
 }
