@@ -42,6 +42,7 @@ zig-cache/
 .idea/
 *.swp
 *.swo
+*.tmp
 
 # System
 .DS_Store
