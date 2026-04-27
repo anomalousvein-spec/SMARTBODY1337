@@ -356,3 +356,276 @@ export async function processWeeklyMetricsForUsers(
   
   return results;
 }
+
+/**
+ * Tiered trend calculation system (Module 3 from original spec).
+ * Implements 2-tier approach for Smart Hybrid model.
+ * 
+ * @param userId User ID
+ * @param currentWeekIsoWeek Current ISO week (e.g., "2024-W01")
+ * @returns Object with trend rate in lbs/week and tier used
+ */
+export async function calculateTrendRateWithTier(
+  userId: string,
+  currentWeekIsoWeek: string
+): Promise<{ trendRateLbsPerWeek: number; tier: 1 | 2; canCalculate: boolean; reason?: string }> {
+  const { db } = await import('../db/database');
+  const { getISOWeekDates, getISOWeek } = await import('./paceCoach');
+  
+  // Get current and prior week dates
+  const currentWeekDates = getISOWeekDates(currentWeekIsoWeek);
+  const priorWeekDate = new Date(currentWeekDates.start);
+  priorWeekDate.setDate(priorWeekDate.getDate() - 7);
+  const priorIsoWeek = getISOWeek(priorWeekDate);
+  const priorWeekDates = getISOWeekDates(priorIsoWeek);
+  
+  // Get weight logs for current and prior weeks
+  const currentWeekWeights = await db.weights
+    .where('[user_id+date]')
+    .between([userId, currentWeekDates.start.toISOString()], [userId, currentWeekDates.end.toISOString()], true, true)
+    .toArray();
+  
+  const priorWeekWeights = await db.weights
+    .where('[user_id+date]')
+    .between([userId, priorWeekDates.start.toISOString()], [userId, priorWeekDates.end.toISOString()], true, true)
+    .toArray();
+  
+  // Sort by date
+  currentWeekWeights.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  priorWeekWeights.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  // Count compliant weeks to determine tier
+  const compliantWeeks = await db.weekly_metrics
+    .where('[user_id+iso_week]')
+    .below([userId, currentWeekIsoWeek])
+    .filter(metric => metric.adjustment_eligible)
+    .toArray();
+  
+  const consecutiveCompliantWeeks = compliantWeeks.length;
+  
+  // Tier selection logic
+  // Tier 1: First check-in or < 2 compliant weeks in history
+  // Tier 2: 2+ compliant weeks (requires ≥2 weigh-ins per week)
+  const useTier2 = consecutiveCompliantWeeks >= 2;
+  
+  if (!useTier2) {
+    // Tier 1: Simple delta (last weight current week - last weight prior week)
+    if (currentWeekWeights.length === 0 || priorWeekWeights.length === 0) {
+      return {
+        trendRateLbsPerWeek: 0,
+        tier: 1,
+        canCalculate: false,
+        reason: 'INSUFFICIENT_WEIGHT_DATA'
+      };
+    }
+    
+    const currentWeight = currentWeekWeights[currentWeekWeights.length - 1].weight;
+    const priorWeight = priorWeekWeights[priorWeekWeights.length - 1].weight;
+    const trendRate = currentWeight - priorWeight;
+    
+    return {
+      trendRateLbsPerWeek: trendRate,
+      tier: 1,
+      canCalculate: true
+    };
+  } else {
+    // Tier 2: Average weight difference (requires ≥2 weigh-ins per week)
+    if (currentWeekWeights.length < 2 || priorWeekWeights.length < 2) {
+      return {
+        trendRateLbsPerWeek: 0,
+        tier: 2,
+        canCalculate: false,
+        reason: 'INSUFFICIENT_WEIGH_INS_FOR_TIER2'
+      };
+    }
+    
+    const currentAvg = currentWeekWeights.reduce((sum, w) => sum + w.weight, 0) / currentWeekWeights.length;
+    const priorAvg = priorWeekWeights.reduce((sum, w) => sum + w.weight, 0) / priorWeekWeights.length;
+    const trendRate = currentAvg - priorAvg;
+    
+    return {
+      trendRateLbsPerWeek: trendRate,
+      tier: 2,
+      canCalculate: true
+    };
+  }
+}
+
+/**
+ * Determines adjustment recommendation based on trend rate and goal.
+ * Implements Module 2 comparison logic.
+ * 
+ * @param params Object containing trend rate, goal rate, and current target
+ * @returns Object with adjustment recommendation and reason
+ */
+export function determineAdjustment(params: {
+  trendRateLbsPerWeek: number;
+  goalRateLbsPerWeek: number;
+  currentTarget: number;
+  adjustmentStep?: number;
+}): { adjustmentKcal: number; reason: 'TOO_SLOW' | 'ON_TRACK' | 'TOO_FAST' } {
+  const { trendRateLbsPerWeek, goalRateLbsPerWeek, currentTarget, adjustmentStep = 75 } = params;
+  
+  // Define tolerance band (±0.3 lbs/week)
+  const tolerance = 0.3;
+  const minAcceptableRate = goalRateLbsPerWeek - tolerance;
+  const maxAcceptableRate = goalRateLbsPerWeek + tolerance;
+  
+  // For weight loss goals (negative rates)
+  if (goalRateLbsPerWeek < 0) {
+    if (trendRateLbsPerWeek > maxAcceptableRate) {
+      // Losing too slowly (e.g., -0.5 when goal is -1.0)
+      return { adjustmentKcal: -adjustmentStep, reason: 'TOO_SLOW' };
+    } else if (trendRateLbsPerWeek < minAcceptableRate) {
+      // Losing too fast (e.g., -1.5 when goal is -1.0)
+      return { adjustmentKcal: adjustmentStep, reason: 'TOO_FAST' };
+    }
+  } 
+  // For weight gain goals (positive rates)
+  else if (goalRateLbsPerWeek > 0) {
+    if (trendRateLbsPerWeek < minAcceptableRate) {
+      // Gaining too slowly
+      return { adjustmentKcal: -adjustmentStep, reason: 'TOO_SLOW' };
+    } else if (trendRateLbsPerWeek > maxAcceptableRate) {
+      // Gaining too fast
+      return { adjustmentKcal: adjustmentStep, reason: 'TOO_FAST' };
+    }
+  }
+  // For maintenance (goal ≈ 0)
+  else {
+    if (Math.abs(trendRateLbsPerWeek) > tolerance) {
+      if (trendRateLbsPerWeek < 0) {
+        return { adjustmentKcal: adjustmentStep, reason: 'TOO_FAST' }; // Losing when should maintain
+      } else {
+        return { adjustmentKcal: -adjustmentStep, reason: 'TOO_SLOW' }; // Gaining when should maintain
+      }
+    }
+  }
+  
+  return { adjustmentKcal: 0, reason: 'ON_TRACK' };
+}
+
+/**
+ * Calculates suggested intake adjustment for a check-in using tiered trends and compliance data.
+ * This is the main entry point for Phase 2 enhanced check-in logic.
+ * 
+ * @param params Object containing user context and check-in data
+ * @returns Object with suggested intake, tier used, and adjustment reasoning
+ */
+export async function calculateEnhancedCheckInSuggestion(params: {
+  userId: string;
+  currentIsoWeek: string;
+  averageIntake: number;
+  goalRateLbsPerWeek: number;
+  currentTarget: number;
+  currentTDEE: number;
+  bmr?: number;
+  gender?: 'male' | 'female';
+  currentWeight?: number;
+}): Promise<{
+  suggestedIntake: number;
+  adjustmentKcal: number;
+  trendRateLbsPerWeek: number;
+  tier: 1 | 2;
+  adjustmentReason: string;
+  canAdjust: boolean;
+  holdReason?: string;
+}> {
+  const { userId, currentIsoWeek, averageIntake, goalRateLbsPerWeek, currentTarget, currentTDEE, bmr, gender, currentWeight } = params;
+  const { db } = await import('../db/database');
+  
+  // Step 1: Calculate trend rate with tier
+  const trendResult = await calculateTrendRateWithTier(userId, currentIsoWeek);
+  
+  if (!trendResult.canCalculate) {
+    // Cannot calculate trend, use fallback to TDEE-based suggestion
+    const fallbackSuggestion = calculateSuggestedIntake({
+      currentTDEE: currentTDEE,
+      goalLbsPerWeek: Math.abs(goalRateLbsPerWeek),
+      lastSuggestedIntake: currentTarget,
+      bmr,
+      gender,
+      currentWeight
+    });
+    
+    return {
+      suggestedIntake: fallbackSuggestion,
+      adjustmentKcal: 0,
+      trendRateLbsPerWeek: 0,
+      tier: trendResult.tier,
+      adjustmentReason: trendResult.reason || 'INSUFFICIENT_DATA',
+      canAdjust: false,
+      holdReason: trendResult.reason
+    };
+  }
+  
+  // Step 2: Check compliance for current week eligibility
+  const currentWeekMetrics = await db.weekly_metrics
+    .where('[user_id+iso_week]')
+    .equals([userId, currentIsoWeek])
+    .first();
+  
+  if (currentWeekMetrics && !currentWeekMetrics.adjustment_eligible) {
+    // Not eligible for adjustment due to compliance issues
+    const fallbackSuggestion = calculateSuggestedIntake({
+      currentTDEE: currentTDEE,
+      goalLbsPerWeek: Math.abs(goalRateLbsPerWeek),
+      lastSuggestedIntake: currentTarget,
+      bmr,
+      gender,
+      currentWeight
+    });
+    
+    return {
+      suggestedIntake: fallbackSuggestion,
+      adjustmentKcal: 0,
+      trendRateLbsPerWeek: trendResult.trendRateLbsPerWeek,
+      tier: trendResult.tier,
+      adjustmentReason: 'COMPLIANCE_HOLD',
+      canAdjust: false,
+      holdReason: currentWeekMetrics.hold_reason || undefined
+    };
+  }
+  
+  // Step 3: Determine adjustment based on trend vs goal
+  const adjustmentResult = determineAdjustment({
+    trendRateLbsPerWeek: trendResult.trendRateLbsPerWeek,
+    goalRateLbsPerWeek: goalRateLbsPerWeek,
+    currentTarget,
+    adjustmentStep: 75
+  });
+  
+  // Step 4: Calculate new target with safeguards
+  let newTarget = currentTarget + adjustmentResult.adjustmentKcal;
+  
+  // Apply boundary logic (Module 5)
+  let floor = 1200;
+  if (gender === 'male') floor = 1500;
+  if (bmr) floor = Math.max(floor, bmr * 0.8);
+  
+  newTarget = Math.max(newTarget, floor);
+  
+  // Max rate ceiling
+  if (currentWeight && (Math.abs(goalRateLbsPerWeek) / currentWeight) > 0.01) {
+    const maxSafeLossPerWeek = currentWeight * 0.01;
+    const maxSafeDeficit = (maxSafeLossPerWeek / 7) * 3500;
+    const minTarget = currentTDEE - maxSafeDeficit;
+    newTarget = Math.max(newTarget, Math.round(minTarget));
+  }
+  
+  // Adjustment throttle
+  const diff = newTarget - currentTarget;
+  const MAX_STEP = 150;
+  if (Math.abs(diff) > MAX_STEP) {
+    newTarget = currentTarget + (diff > 0 ? MAX_STEP : -MAX_STEP);
+  }
+  
+  return {
+    suggestedIntake: newTarget,
+    adjustmentKcal: adjustmentResult.adjustmentKcal,
+    trendRateLbsPerWeek: trendResult.trendRateLbsPerWeek,
+    tier: trendResult.tier,
+    adjustmentReason: adjustmentResult.reason,
+    canAdjust: true
+  };
+}
