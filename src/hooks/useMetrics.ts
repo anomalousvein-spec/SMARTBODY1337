@@ -16,6 +16,9 @@ export interface Metrics {
   todayMacros: MacroEntry | null;
   weeklyAvgCalories: number;
   weeklyAvgProtein: number;
+  targetWeight?: number;
+  targetLossRate?: number;
+  currentWeight?: number;
 }
 
 /**
@@ -88,7 +91,10 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
       cuttingCalories: settings?.cuttingCalories || DEFAULT_CUTTING_CALORIES,
       todayMacros,
       weeklyAvgCalories,
-      weeklyAvgProtein
+      weeklyAvgProtein,
+      targetWeight: settings?.targetWeight,
+      targetLossRate: settings?.targetLossRate,
+      currentWeight: settings?.currentWeight
     };
   }, [weights, waist, macros, settings, isLoading]);
 
