@@ -60,7 +60,8 @@ export function TDEECalculator() {
       const heightCm = fullSettings.heightUnit === 'in' ? fullSettings.height * INCHES_TO_CM : fullSettings.height;
       const bmr = calculateBMR(weightKg, heightCm, fullSettings.age, fullSettings.gender);
       const tdee = calculateTDEE(bmr, fullSettings.activityLevel);
-      const cuttingCalories = fullSettings.cuttingCalories || (tdee - 500);
+      // Use stored cuttingCalories if available, otherwise calculate from targetLossRate
+      const cuttingCalories = fullSettings.cuttingCalories || Math.round(tdee - (fullSettings.targetLossRate || 0) * 500);
       setResults({ bmr, tdee, cuttingCalories });
     }
   }, [fullSettings]);
@@ -113,7 +114,12 @@ export function TDEECalculator() {
       const heightCm = heightUnit === 'in' ? heightValue * INCHES_TO_CM : heightValue;
       const bmr = calculateBMR(weightKg, heightCm, ageValue, gender);
       const tdee = calculateTDEE(bmr, activityLevel);
-      const cuttingCalories = tdee - 500;
+      
+      // Calculate target calories based on actual target loss rate
+      // 1 lb/week = 500 cal/day deficit, so: targetCalories = TDEE - (targetLossRate * 500)
+      // If targetLossRate is 0, targetCalories = TDEE (maintenance)
+      // If targetLossRate is negative (surplus), targetCalories > TDEE
+      const targetCalories = Math.round(tdee - (targetLossRateValue || 0) * 500);
 
       await updateSettings({
         age: ageValue,
@@ -125,11 +131,11 @@ export function TDEECalculator() {
         targetWeight: targetWeightValue,
         targetLossRate: targetLossRateValue,
         tdee,
-        cuttingCalories
+        cuttingCalories: targetCalories
       });
 
       setSuccess(true);
-      setResults({ bmr, tdee, cuttingCalories });
+      setResults({ bmr, tdee, cuttingCalories: targetCalories });
     } catch (err) {
       console.error('Failed to save TDEE settings:', err);
       setError('Failed to save settings.');
