@@ -42,9 +42,11 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
         .equals(userId)
         .toArray();
 
-      const sortedWeights = results
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .map(w => w.weight);
+      // Sort entries chronologically and keep full objects for unit info
+      const sortedEntries = results
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      const sortedWeights = sortedEntries.map(w => w.weight);
 
       // We need at least some data to calculate trend
       if (sortedWeights.length < MIN_WEIGHT_ENTRIES_FOR_CHECKIN) {
@@ -60,8 +62,9 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
       const calculatedTDEE = calculateBackCalculatedTDEE(intake, slope);
 
       // 4. Get BMR for safety floor
-      const lastWeight = sortedWeights[sortedWeights.length-1];
-      const weightKg = settings.heightUnit === 'in' ? lastWeight * 0.453592 : lastWeight;
+      const lastEntry = sortedEntries[sortedEntries.length-1];
+      // Convert weight to kg based on its actual unit, not height unit
+      const weightKg = lastEntry.unit === 'kg' ? lastEntry.weight : lastEntry.weight * 0.453592;
       const heightCm = settings.heightUnit === 'in' ? settings.height * 2.54 : settings.height;
       const bmr = calculateBMR(weightKg, heightCm, settings.age, settings.gender);
 
@@ -72,7 +75,7 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
         lastSuggestedIntake: settings.lastSuggestedIntake,
         bmr,
         gender: settings.gender,
-        currentWeight: settings.currentWeight || lastWeight
+        currentWeight: settings.currentWeight || lastEntry.weight
       });
 
       // 6. Save check-in and update settings

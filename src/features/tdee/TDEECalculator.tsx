@@ -48,12 +48,14 @@ export function TDEECalculator() {
       setHeight(fullSettings.height.toString());
       setHeightUnit(fullSettings.heightUnit);
       setWeight(fullSettings.currentWeight?.toString() || '180');
+      // Default weight unit based on height unit is a reasonable assumption for initial display
       setWeightUnit(fullSettings.heightUnit === 'in' ? 'lbs' : 'kg');
       setActivityLevel(fullSettings.activityLevel);
       setTargetWeight(fullSettings.targetWeight?.toString() || '');
       setTargetLossRate(fullSettings.targetLossRate?.toString() || '1');
 
       const currentWeightVal = fullSettings.currentWeight || 180;
+      // Assume weight matches height unit system (imperial vs metric)
       const weightKg = fullSettings.heightUnit === 'in' ? currentWeightVal * LBS_TO_KG : currentWeightVal;
       const heightCm = fullSettings.heightUnit === 'in' ? fullSettings.height * INCHES_TO_CM : fullSettings.height;
       const bmr = calculateBMR(weightKg, heightCm, fullSettings.age, fullSettings.gender);
