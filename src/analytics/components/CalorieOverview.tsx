@@ -22,10 +22,10 @@ export const CalorieOverview = memo(({ metrics }: CalorieOverviewProps) => {
       <Card className="card-hover">
         <h3 className="text-lg font-bold text-theme-text-primary mb-4">Calorie Overview</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className={`text-center p-3 ${phase.bgClass} rounded-lg`}>
-            <div className={`text-xs ${phase.colorClass} mb-1`}>{phase.label}</div>
-            <div className={`text-xl font-bold ${phase.colorClass}`}>{Math.round(metrics?.maintenanceCalories ?? 2000)}</div>
-            <div className={`text-xs ${phase.colorClass}`}>cal/day</div>
+          <div className="text-center p-3 bg-theme-bg-tertiary/50 rounded-lg">
+            <div className="text-xs text-theme-text-tertiary mb-1">Maintenance</div>
+            <div className="text-xl font-bold text-theme-text-primary">{Math.round(metrics?.maintenanceCalories ?? 2000)}</div>
+            <div className="text-xs text-theme-text-tertiary">cal/day</div>
           </div>
           <div className={`text-center p-3 ${phase.bgClass} rounded-lg`}>
             <div className={`text-xs ${phase.colorClass} mb-1`}>{phase.label}</div>
