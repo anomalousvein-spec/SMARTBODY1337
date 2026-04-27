@@ -59,7 +59,7 @@ export function InputField({
     <div className={className}>
       <label 
         htmlFor={inputId}
-        className="block text-xs font-black uppercase tracking-widest text-theme-text-tertiary mb-1.5 ml-1"
+        className="block text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-2 ml-1"
       >
         {label}
       </label>
@@ -78,10 +78,11 @@ export function InputField({
         aria-invalid={!!error}
         aria-describedby={error ? `${inputId}-error` : undefined}
         className={cn(
-          "w-full max-w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary/50 text-theme-text-primary outline-none transition-all box-border",
-          "focus:ring-2 focus:ring-theme-accent focus:border-transparent",
+          "w-full max-w-full px-4 py-3.5 rounded-xl border border-white/10 bg-theme-bg-tertiary/60 text-theme-text-primary outline-none transition-all duration-200 box-border",
+          "focus:ring-2 focus:ring-theme-accent/50 focus:border-theme-accent/50",
+          "hover:border-white/20",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          error && "border-red-500/50 focus:ring-red-500/50",
+          error && "border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50",
           type === "date" && "text-sm"
         )}
       />
@@ -137,7 +138,7 @@ export function SelectField({
     <div className={className}>
       <label 
         htmlFor={selectId}
-        className="block text-xs font-black uppercase tracking-widest text-theme-text-tertiary mb-1.5 ml-1"
+        className="block text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-2 ml-1"
       >
         {label}
       </label>
@@ -149,10 +150,18 @@ export function SelectField({
         required={required}
         aria-label={ariaLabel || label}
         className={cn(
-          "w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary/50 text-theme-text-primary outline-none transition-all",
-          "focus:ring-2 focus:ring-theme-accent focus:border-transparent",
-          "disabled:opacity-50 disabled:cursor-not-allowed"
+          "w-full px-4 py-3.5 rounded-xl border border-white/10 bg-theme-bg-tertiary/60 text-theme-text-primary outline-none transition-all duration-200",
+          "focus:ring-2 focus:ring-theme-accent/50 focus:border-theme-accent/50",
+          "hover:border-white/20",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
+          "appearance-none cursor-pointer pr-10"
         )}
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a1a1aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right 0.75rem center',
+          backgroundSize: '1.25rem'
+        }}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -210,7 +219,7 @@ export function TextAreaField({
     <div className={className}>
       <label 
         htmlFor={textareaId}
-        className="block text-xs font-black uppercase tracking-widest text-theme-text-tertiary mb-1.5 ml-1"
+        className="block text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-2 ml-1"
       >
         {label}
       </label>
@@ -224,8 +233,9 @@ export function TextAreaField({
         required={required}
         aria-label={ariaLabel || label}
         className={cn(
-          "w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary/50 text-theme-text-primary outline-none transition-all",
-          "focus:ring-2 focus:ring-theme-accent focus:border-transparent",
+          "w-full px-4 py-3.5 rounded-xl border border-white/10 bg-theme-bg-tertiary/60 text-theme-text-primary outline-none transition-all duration-200",
+          "focus:ring-2 focus:ring-theme-accent/50 focus:border-theme-accent/50",
+          "hover:border-white/20",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           "resize-none"
         )}
@@ -249,13 +259,13 @@ export interface FormMessageProps {
 export function FormMessage({ type, message }: FormMessageProps) {
   const styles = {
     error: "bg-red-500/10 border border-red-500/20 text-red-400",
-    success: "bg-green-500/10 border border-green-500/20 text-green-400",
+    success: "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
     info: "bg-blue-500/10 border border-blue-500/20 text-blue-400",
   };
 
   return (
     <div 
-      className={cn("p-4 rounded-xl text-[10px] font-bold uppercase tracking-widest", styles[type])}
+      className={cn("p-4 rounded-xl text-[10px] font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300", styles[type])}
       role={type === 'error' ? 'alert' : 'status'}
       aria-live="polite"
     >
@@ -299,11 +309,18 @@ export function SubmitButton({
       aria-busy={isSubmitting}
       aria-label={ariaLabel}
       className={cn(
-        "w-full py-4 px-4 bg-theme-accent hover:opacity-90 disabled:opacity-50 text-white font-black uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]",
-        "flex items-center justify-center",
+        "w-full py-4 px-4 bg-theme-accent hover:bg-theme-accent/90 disabled:opacity-50 text-white font-black uppercase tracking-widest rounded-xl transition-all duration-200 active:scale-[0.98]",
+        "flex items-center justify-center gap-2",
+        "shadow-lg shadow-theme-accent/25 hover:shadow-xl hover:shadow-theme-accent/30",
         className
       )}
     >
+      {isSubmitting && (
+        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+      )}
       {isSubmitting ? submittingText : idleText}
     </button>
   );

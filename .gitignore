@@ -1,4 +1,4 @@
-```gitignore
+```
 # Compiled and build artifacts
 *.pyc
 __pycache__/
@@ -6,31 +6,23 @@ __pycache__/
 *.obj
 dist/
 build/
-*.class
-*.exe
-*.dll
-*.so
-*.a
-*.out
+target/
 
 # Dependencies
 .venv/
 venv/
 node_modules/
-target/
-.gradle/
-.mypy_cache/
-.pytest_cache/
-.julia/
-zig-cache/
+.pip-tools/
+.tox/
+.coverage
+coverage/
+htmlcov/
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
 *.swo
-*.bak
-*.~*
 
 # Environment
 .env
@@ -42,27 +34,31 @@ zig-cache/
 .idea/
 *.swp
 *.swo
-*.tmp
 
-# System
+# OS generated files
 .DS_Store
 Thumbs.db
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Icon?
-Network Trash Folder
-Temporary Items
-.apdisk
 
-# Coverage
-coverage/
-htmlcov/
-.coverage
+# Python specific
+*.pyc
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+*.pyo
+*.pyd
 
-# Compressed files
+# Node.js specific
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.min.js
+*.min.css
+
+# Compression files
 *.zip
 *.gz
 *.tar
