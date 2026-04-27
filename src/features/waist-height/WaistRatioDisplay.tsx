@@ -38,7 +38,7 @@ export function WaistRatioDisplay() {
   }, [waistEntries, settings]);
 
   if (waistLoading || settingsLoading) return <Card className="card-hover"><Skeleton className="h-48" /></Card>;
-  if (!analytics) return <Card className="card-hover"><p className="text-center text-theme-text-tertiary py-8">Log your first waist measurement and set your height in Profile to see your ratio!</p></Card>;
+  if (!analytics) return <Card className="card-hover"><p className="text-center text-theme-text-tertiary py-8 font-medium">Log your first waist measurement and set your height in Profile to see your ratio!</p></Card>;
 
   const isPositiveProgress = analytics.totalChangeCm >= 0;
 
@@ -46,33 +46,33 @@ export function WaistRatioDisplay() {
     <Card className="card-hover">
       <h2 className="text-xl font-bold text-theme-text-primary mb-4">Waist-to-Height Ratio</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 bg-theme-bg-tertiary/50 rounded-lg">
-          <p className="text-sm text-theme-text-tertiary mb-1">Latest Waist</p>
+        <div className="p-4 bg-theme-bg-tertiary/40 border border-white/5 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Latest Waist</p>
           <p className="text-2xl font-bold text-theme-text-primary">
             {analytics.latestWaist.toFixed(1)}
             <span className="text-sm font-normal text-theme-text-tertiary ml-1">{analytics.latestUnit}</span>
           </p>
-          <p className="text-xs text-theme-text-tertiary mt-1">{new Date(analytics.latestDate).toLocaleDateString()}</p>
+          <p className="text-[10px] font-bold text-theme-text-tertiary uppercase tracking-wide mt-1">{new Date(analytics.latestDate).toLocaleDateString()}</p>
         </div>
-        <div className={`p-4 rounded-lg ${analytics.healthInfo.category === 'Healthy' ? 'bg-green-50 dark:bg-green-900/20' : 'bg-theme-bg-tertiary/50'}`}>
-          <p className="text-sm text-theme-text-tertiary mb-1">Ratio</p>
+        <div className={`p-4 rounded-xl border border-white/5 ${analytics.healthInfo.category === 'Healthy' ? 'bg-success/10' : 'bg-theme-bg-tertiary/40'}`}>
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Ratio</p>
           <p className={`text-2xl font-bold ${analytics.healthInfo.color}`}>{analytics.ratio.toFixed(2)}</p>
-          <p className={`text-sm font-medium ${analytics.healthInfo.color} mt-1`}>{analytics.healthInfo.category}</p>
+          <p className={`text-[10px] font-black uppercase tracking-widest ${analytics.healthInfo.color} mt-1`}>{analytics.healthInfo.category}</p>
         </div>
-        <div className={`p-4 rounded-lg ${isPositiveProgress ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-500/10'}`}>
-          <p className="text-sm text-theme-text-tertiary mb-1">Total Change</p>
-          <p className={`text-2xl font-bold ${isPositiveProgress ? 'text-green-600 dark:text-green-400' : 'text-red-400'}`}>
+        <div className={`p-4 rounded-xl border border-white/5 ${isPositiveProgress ? 'bg-success/10' : 'bg-error/10'}`}>
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Total Change</p>
+          <p className={`text-2xl font-bold ${isPositiveProgress ? 'text-success' : 'text-error'}`}>
             {isPositiveProgress ? '-' : '+'}{Math.abs(analytics.totalChangeCm).toFixed(1)}
             <span className="text-sm font-normal ml-1">cm</span>
           </p>
         </div>
-        <div className="p-4 bg-theme-bg-tertiary/50 rounded-lg">
-          <p className="text-sm text-theme-text-tertiary mb-1">Measurements</p>
+        <div className="p-4 bg-theme-bg-tertiary/40 border border-white/5 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Measurements</p>
           <p className="text-2xl font-bold text-theme-text-primary">{analytics.entriesCount}</p>
         </div>
       </div>
-      <div className="mt-4 p-4 bg-theme-accent/10 rounded-lg">
-        <p className="text-sm text-theme-text-secondary"><span className="font-semibold">Insight:</span> {analytics.healthInfo.description}</p>
+      <div className="mt-4 p-4 bg-theme-accent/10 border border-theme-accent/10 rounded-xl">
+        <p className="text-sm text-theme-text-secondary"><span className="text-[10px] font-black uppercase tracking-widest text-theme-accent mr-2">Insight</span> {analytics.healthInfo.description}</p>
       </div>
     </Card>
   );

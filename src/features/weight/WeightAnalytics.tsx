@@ -33,7 +33,7 @@ export function WeightAnalytics() {
   }, [weights, targetWeight]);
 
   if (weightsLoading || settingsLoading) return <Card className="card-hover"><Skeleton className="h-48" /></Card>;
-  if (!analytics) return <Card className="card-hover"><p className="text-center text-theme-text-tertiary py-8">Log your first weight to see analytics!</p></Card>;
+  if (!analytics) return <Card className="card-hover"><p className="text-center text-theme-text-tertiary py-8 font-medium">Log your first weight to see analytics!</p></Card>;
 
   const isPositiveProgress = analytics.totalLoss >= 0;
 
@@ -41,35 +41,35 @@ export function WeightAnalytics() {
     <Card className="card-hover">
       <h2 className="text-xl font-bold text-theme-text-primary mb-4">Weight Analytics</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-theme-bg-tertiary/50 rounded-lg">
-          <p className="text-sm text-theme-text-tertiary mb-1">Start</p>
-          <p className="text-2xl font-bold text-theme-text-primary">{analytics.startWeight.toFixed(1)}<span className="text-sm font-normal text-theme-text-tertiary ml-1">lbs</span></p>
+        <div className="p-4 bg-theme-bg-tertiary/40 border border-white/5 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Start</p>
+          <p className="text-2xl font-bold text-theme-text-primary">{analytics.startWeight.toFixed(1)}<span className="text-xs font-normal text-theme-text-tertiary ml-1 uppercase">lbs</span></p>
         </div>
-        <div className="p-4 bg-theme-bg-tertiary/50 rounded-lg">
-          <p className="text-sm text-theme-text-tertiary mb-1">Current</p>
-          <p className="text-2xl font-bold text-theme-text-primary">{analytics.currentWeight.toFixed(1)}<span className="text-sm font-normal text-theme-text-tertiary ml-1">lbs</span></p>
+        <div className="p-4 bg-theme-bg-tertiary/40 border border-white/5 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Current</p>
+          <p className="text-2xl font-bold text-theme-text-primary">{analytics.currentWeight.toFixed(1)}<span className="text-xs font-normal text-theme-text-tertiary ml-1 uppercase">lbs</span></p>
         </div>
-        <div className={`p-4 rounded-lg ${isPositiveProgress ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-500/10'}`}>
-          <p className="text-sm text-theme-text-tertiary mb-1">Change</p>
-          <p className={`text-2xl font-bold ${isPositiveProgress ? 'text-green-600 dark:text-green-400' : 'text-red-400'}`}>{isPositiveProgress ? '-' : '+'}{Math.abs(analytics.totalLoss).toFixed(1)}<span className="text-sm font-normal ml-1">lbs</span></p>
+        <div className={`p-4 rounded-xl border border-white/5 ${isPositiveProgress ? 'bg-success/10' : 'bg-error/10'}`}>
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Change</p>
+          <p className={`text-2xl font-bold ${isPositiveProgress ? 'text-success' : 'text-error'}`}>{isPositiveProgress ? '-' : '+'}{Math.abs(analytics.totalLoss).toFixed(1)}<span className="text-xs font-normal ml-1 uppercase">lbs</span></p>
         </div>
-        <div className="p-4 bg-theme-bg-tertiary/50 rounded-lg">
-          <p className="text-sm text-theme-text-tertiary mb-1">Weekly Avg</p>
-          <p className="text-2xl font-bold text-theme-accent">{analytics.weeklyAvgLoss.toFixed(2)}<span className="text-sm font-normal text-theme-text-tertiary ml-1">lbs/wk</span></p>
+        <div className="p-4 bg-theme-bg-tertiary/40 border border-white/5 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Weekly Avg</p>
+          <p className="text-2xl font-bold text-theme-accent">{analytics.weeklyAvgLoss.toFixed(2)}<span className="text-xs font-normal text-theme-text-tertiary ml-1 uppercase">lbs/wk</span></p>
         </div>
-        <div className="p-4 bg-theme-bg-tertiary/50 rounded-lg">
-          <p className="text-sm text-theme-text-tertiary mb-1">7D Avg</p>
-          <p className="text-2xl font-bold text-theme-text-primary">{analytics.currentWeeklyMA.toFixed(1)}<span className="text-sm font-normal text-theme-text-tertiary ml-1">lbs</span></p>
+        <div className="p-4 bg-theme-bg-tertiary/40 border border-white/5 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">7D Avg</p>
+          <p className="text-2xl font-bold text-theme-text-primary">{analytics.currentWeeklyMA.toFixed(1)}<span className="text-xs font-normal text-theme-text-tertiary ml-1 uppercase">lbs</span></p>
         </div>
-        <div className="p-4 bg-theme-bg-tertiary/50 rounded-lg">
-          <p className="text-sm text-theme-text-tertiary mb-1">Entries</p>
+        <div className="p-4 bg-theme-bg-tertiary/40 border border-white/5 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Entries</p>
           <p className="text-2xl font-bold text-theme-text-primary">{analytics.entriesCount}</p>
         </div>
       </div>
       {targetWeight && analytics.projectedWeeks !== null && (
-        <div className="mt-4 p-4 bg-theme-accent/10 rounded-lg">
-          <p className="text-sm text-theme-text-tertiary mb-1">Projected Weeks to Goal ({targetWeight} lbs)</p>
-          <p className="text-2xl font-bold text-theme-accent">{analytics.projectedWeeks}<span className="text-sm font-normal text-theme-text-tertiary ml-1">weeks</span></p>
+        <div className="mt-4 p-4 bg-theme-accent/10 border border-theme-accent/10 rounded-xl">
+          <p className="text-[10px] font-black uppercase tracking-widest text-theme-accent mb-1">Projected Weeks to Goal ({targetWeight} lbs)</p>
+          <p className="text-2xl font-bold text-theme-accent">{analytics.projectedWeeks}<span className="text-sm font-normal text-theme-text-tertiary ml-1 uppercase">weeks</span></p>
         </div>
       )}
     </Card>
