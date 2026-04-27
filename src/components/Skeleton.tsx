@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../utils/ui';
+import './Skeleton.css';
 
 interface SkeletonProps {
   className?: string;
@@ -7,13 +8,13 @@ interface SkeletonProps {
 }
 
 /**
- * Reusable skeleton loader component for perceived performance
+ * Reusable skeleton loader component with shimmer animation for perceived performance
  */
 export function Skeleton({ className, variant = 'rectangular' }: SkeletonProps) {
   return (
     <div
       className={cn(
-        "animate-pulse bg-theme-bg-tertiary/50",
+        "skeleton-base",
         variant === 'circular' ? "rounded-full" : "rounded-lg",
         variant === 'text' ? "h-4 w-3/4 mb-2" : "",
         className
@@ -24,7 +25,7 @@ export function Skeleton({ className, variant = 'rectangular' }: SkeletonProps) 
 }
 
 /**
- * Pre-defined dashboard card skeleton
+ * Pre-defined dashboard card skeleton with shimmer effect
  */
 export function CardSkeleton() {
   return (

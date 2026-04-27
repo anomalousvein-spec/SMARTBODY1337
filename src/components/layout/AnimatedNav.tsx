@@ -17,7 +17,7 @@ const navItems = [
 ] as const;
 
 /**
- * Animated bottom navigation bar with smooth transitions
+ * Animated bottom navigation bar with smooth transitions and floating pill background
  * Features 6 tabs: Dash, Weight, Waist, Macros, TDEE, and Settings
  * @param isStandalone - Whether the app is running in standalone PWA mode
  */
@@ -33,8 +33,23 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="flex items-center justify-around px-2">
+      <div className="flex items-center justify-around px-2 relative">
+        {/* Animated floating pill background */}
         {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          if (!isActive) return null;
+          return (
+            <div
+              key={item.path}
+              className="absolute bottom-2 w-14 h-10 bg-theme-accent/15 rounded-xl transition-all duration-300 ease-out -z-10"
+              style={{
+                left: `calc(${navItems.findIndex(i => i.path === item.path) * (100 / navItems.length)}% + ${100 / navItems.length / 2}% - 28px)`
+              }}
+            />
+          );
+        })}
+        
+        {navItems.map((item, index) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
 
@@ -43,16 +58,23 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
               key={item.path}
               to={item.path}
               className={cn(
-                'flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300',
+                'relative flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 group',
                 isActive
-                  ? 'bg-theme-accent/20 text-theme-accent'
+                  ? 'text-theme-accent scale-110'
                   : 'text-theme-text-tertiary hover:text-theme-text-secondary hover:bg-theme-bg-tertiary/30'
               )}
               aria-label={item.ariaLabel}
               aria-current={isActive ? 'page' : undefined}
             >
-              <Icon className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
-              <span className="text-[9px] md:text-[10px] font-medium mt-1">{item.label}</span>
+              <Icon 
+                className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-200 group-hover:scale-110" 
+                aria-hidden="true" 
+              />
+              <span className="text-[9px] md:text-[10px] font-medium mt-1 transition-colors duration-200">{item.label}</span>
+              {/* Active indicator dot */}
+              {isActive && (
+                <span className="absolute -bottom-1 w-1 h-1 bg-theme-accent rounded-full" />
+              )}
             </Link>
           );
         })}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Palette } from 'lucide-react';
+import { Palette, Sparkles } from 'lucide-react';
 import { cn } from '../../utils/ui';
 
 interface GlassHeaderProps {
@@ -9,8 +9,8 @@ interface GlassHeaderProps {
 }
 
 /**
- * Glassmorphic header component with sticky positioning
- * Features branding and theme toggle functionality
+ * Glassmorphic header component with sticky positioning and animated theme toggle
+ * Features branding and theme toggle functionality with enhanced visual feedback
  */
 export default function GlassHeader({ isStandalone, onToggleTheme }: GlassHeaderProps) {
   return (
@@ -22,16 +22,21 @@ export default function GlassHeader({ isStandalone, onToggleTheme }: GlassHeader
       role="banner"
     >
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-black uppercase tracking-widest text-theme-text-primary">
-          SmartBody<span className="text-theme-accent">1337</span>
+        <h1 className="text-lg font-black uppercase tracking-widest text-theme-text-primary flex items-center gap-2">
+          <span className="relative">
+            SmartBody<span className="text-theme-accent">1337</span>
+            <span className="absolute -top-1 -right-3 w-2 h-2 bg-theme-accent rounded-full animate-pulse" />
+          </span>
         </h1>
         <button
           onClick={onToggleTheme}
-          className="p-2.5 rounded-xl bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary/70 transition-all duration-200 hover:scale-105 active:scale-95"
+          className="group relative p-2.5 rounded-xl bg-theme-bg-tertiary/40 hover:bg-theme-bg-tertiary/70 transition-all duration-300 hover:scale-110 active:scale-95 overflow-hidden"
           aria-label="Toggle color theme"
           type="button"
         >
-          <Palette className="w-5 h-5 text-theme-text-secondary" aria-hidden="true" />
+          {/* Subtle shine effect on hover */}
+          <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
+          <Palette className="w-5 h-5 text-theme-text-secondary group-hover:text-theme-accent transition-colors duration-300" aria-hidden="true" />
         </button>
       </div>
     </header>
