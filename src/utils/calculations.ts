@@ -140,7 +140,7 @@ export function getUserPhase(
   if (currentWeight === undefined || targetWeight === undefined || targetLossRate === undefined) {
     return {
       type: 'cutting',
-      label: 'Cutting Target',
+      label: 'Deficit Target',
       colorClass: 'text-theme-accent',
       bgClass: 'bg-theme-accent/10'
     };
@@ -170,7 +170,7 @@ export function getUserPhase(
   // Cutting: targetWeight < currentWeight AND targetLossRate > 0
   return {
     type: 'cutting',
-    label: 'Cutting Target',
+    label: 'Deficit Target',
     colorClass: 'text-theme-accent',
     bgClass: 'bg-theme-accent/10'
   };

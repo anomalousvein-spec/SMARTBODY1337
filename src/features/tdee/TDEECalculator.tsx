@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { calculateBMR, calculateTDEE } from '../../utils/calculations';
+import { calculateBMR, calculateTDEE, getUserPhase } from '../../utils/calculations';
 import { InputField, SelectField, FormMessage, SubmitButton } from '../../components/Form';
 import { Card, Skeleton } from '../../components';
 import { validateAge, validateHeight, validateWeight } from '../../utils/validation';
@@ -189,20 +189,29 @@ export function TDEECalculator() {
       {results && (
         <div className="mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
           <h3 className="text-lg font-semibold text-theme-text-primary mb-4">Your Results</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-theme-accent/10 rounded-lg p-4">
-              <p className="text-sm text-theme-text-tertiary">BMR</p>
-              <p className="text-2xl font-bold text-theme-accent">{Math.round(results.bmr)} <span className="text-sm font-normal">cal/day</span></p>
-            </div>
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-              <p className="text-sm text-theme-text-tertiary">TDEE</p>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{Math.round(results.tdee)} <span className="text-sm font-normal">cal/day</span></p>
-            </div>
-            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
-              <p className="text-sm text-theme-text-tertiary">Cutting</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{Math.round(results.cuttingCalories)} <span className="text-sm font-normal">cal/day</span></p>
-            </div>
-          </div>
+          {(() => {
+            const phase = getUserPhase(
+              fullSettings?.currentWeight,
+              fullSettings?.targetWeight,
+              fullSettings?.targetLossRate
+            );
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-theme-accent/10 rounded-lg p-4">
+                  <p className="text-sm text-theme-text-tertiary">BMR</p>
+                  <p className="text-2xl font-bold text-theme-accent">{Math.round(results.bmr)} <span className="text-sm font-normal">cal/day</span></p>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                  <p className="text-sm text-theme-text-tertiary">TDEE</p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{Math.round(results.tdee)} <span className="text-sm font-normal">cal/day</span></p>
+                </div>
+                <div className={`${phase.bgClass} rounded-lg p-4`}>
+                  <p className={`text-sm ${phase.colorClass}`}>{phase.label}</p>
+                  <p className={`text-2xl font-bold ${phase.colorClass}`}>{Math.round(results.cuttingCalories)} <span className="text-sm font-normal">cal/day</span></p>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </Card>
