@@ -629,3 +629,388 @@ export async function calculateEnhancedCheckInSuggestion(params: {
     canAdjust: true
   };
 }
+
+// ============================================================================
+// Phase 3: Smart Triggers & Enhanced Check-in
+// ============================================================================
+
+/**
+ * SmartTrigger interface for proactive coaching notifications
+ */
+export interface SmartTrigger {
+  type: 'COMPLIANCE_LOW' | 'COMPLIANCE_SLIPPING' | 'MILESTONE' | 'DATA_GAP';
+  priority: 'HIGH' | 'MEDIUM' | 'LOW';
+  message: string;
+  meta: any;
+}
+
+/**
+ * Result object from enhanced check-in processing
+ */
+export interface CheckInResult {
+  newTarget: number;
+  adjustmentAmount: number;
+  trendRate: number;
+  triggers: SmartTrigger[];
+}
+
+/**
+ * Notification payload format
+ */
+export interface NotificationPayload {
+  title: string;
+  body: string;
+  actionType: string;
+}
+
+/**
+ * Evaluates smart triggers for a given user based on recent metrics and activity.
+ * 
+ * @param userId User ID
+ * @returns Array of SmartTrigger objects
+ */
+export async function evaluateSmartTriggers(userId: string): Promise<SmartTrigger[]> {
+  const { db } = await import('../db/database');
+  const { getISOWeek } = await import('./paceCoach');
+  
+  const triggers: SmartTrigger[] = [];
+  const today = new Date();
+  
+  // Fetch last 3 weeks of WeeklyMetrics
+  const weeklyMetrics = await db.weekly_metrics
+    .where('user_id')
+    .equals(userId)
+    .reverse()
+    .limit(3)
+    .toArray();
+  
+  // Sort by iso_week descending (most recent first)
+  weeklyMetrics.sort((a, b) => {
+    if (a.iso_week > b.iso_week) return -1;
+    if (a.iso_week < b.iso_week) return 1;
+    return 0;
+  });
+  
+  // HIGH Priority: compliance_score < 0.5 for 2 consecutive weeks
+  if (weeklyMetrics.length >= 2) {
+    const [recent, previous] = weeklyMetrics;
+    if (recent.compliance_score < 0.5 && previous.compliance_score < 0.5) {
+      triggers.push({
+        type: 'COMPLIANCE_LOW',
+        priority: 'HIGH',
+        message: `Your compliance has been below 50% for 2 consecutive weeks. Let's get back on track!`,
+        meta: {
+          recentScore: recent.compliance_score,
+          previousScore: previous.compliance_score,
+          weeks: [recent.iso_week, previous.iso_week]
+        }
+      });
+    }
+  }
+  
+  // MEDIUM Priority: compliance_score between 0.5 and 0.8 for most recent week
+  if (weeklyMetrics.length >= 1) {
+    const recent = weeklyMetrics[0];
+    if (recent.compliance_score >= 0.5 && recent.compliance_score < 0.8) {
+      triggers.push({
+        type: 'COMPLIANCE_SLIPPING',
+        priority: 'MEDIUM',
+        message: `You're at ${Math.round(recent.compliance_score * 100)}% compliance this week. Aim for 80%+ to unlock adjustments!`,
+        meta: {
+          score: recent.compliance_score,
+          week: recent.iso_week
+        }
+      });
+    }
+  }
+  
+  // MILESTONE: consecutive_compliant_weeks divisible by 4
+  const userProfile = await db.user_profiles
+    .where('user_id')
+    .equals(userId)
+    .first();
+  
+  if (userProfile && userProfile.consecutive_compliant_weeks > 0) {
+    if (userProfile.consecutive_compliant_weeks % 4 === 0) {
+      triggers.push({
+        type: 'MILESTONE',
+        priority: 'LOW',
+        message: `🎉 Congratulations! You've hit ${userProfile.consecutive_compliant_weeks} compliant weeks in a row!`,
+        meta: {
+          streak: userProfile.consecutive_compliant_weeks,
+          milestone: userProfile.consecutive_compliant_weeks / 4
+        }
+      });
+    }
+  }
+  
+  // DATA_GAP: No weight log in the last 10 days
+  const tenDaysAgo = new Date(today);
+  tenDaysAgo.setDate(today.getDate() - 10);
+  
+  const recentWeights = await db.weights
+    .where('[user_id+date]')
+    .between([userId, tenDaysAgo.toISOString()], [userId, today.toISOString()], true, true)
+    .toArray();
+  
+  if (recentWeights.length === 0) {
+    triggers.push({
+      type: 'DATA_GAP',
+      priority: 'MEDIUM',
+      message: `We haven't seen a weigh-in from you in over 10 days. Log your weight to keep your data fresh!`,
+      meta: {
+        daysSinceLastLog: 10,
+        lastLogDate: null
+      }
+    });
+  } else {
+    // Calculate actual days since last log
+    const sortedWeights = [...recentWeights].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const lastLogDate = new Date(sortedWeights[0].date);
+    const daysSinceLastLog = Math.floor((today.getTime() - lastLogDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceLastLog > 10) {
+      triggers.push({
+        type: 'DATA_GAP',
+        priority: 'MEDIUM',
+        message: `We haven't seen a weigh-in from you in ${daysSinceLastLog} days. Log your weight to keep your data fresh!`,
+        meta: {
+          daysSinceLastLog,
+          lastLogDate: lastLogDate.toISOString()
+        }
+      });
+    }
+  }
+  
+  return triggers;
+}
+
+/**
+ * Determines if a notification should be sent for a trigger based on rate limiting.
+ * Prevents spamming users with the same high-priority alerts.
+ * 
+ * @param trigger The SmartTrigger to evaluate
+ * @param lastSentDate Date when this type of trigger was last sent (null if never)
+ * @returns true if notification should be sent, false otherwise
+ */
+export function shouldSendNotificationForTrigger(trigger: SmartTrigger, lastSentDate: Date | null): boolean {
+  if (!lastSentDate) return true;
+  
+  const now = new Date();
+  const diffTime = now.getTime() - lastSentDate.getTime();
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  
+  // Rate limiting based on priority
+  switch (trigger.priority) {
+    case 'HIGH':
+      // Don't send same high priority trigger more than once every 3 days
+      return diffDays >= 3;
+    case 'MEDIUM':
+      // Don't send same medium priority trigger more than once every 5 days
+      return diffDays >= 5;
+    case 'LOW':
+      // Milestone notifications can be sent immediately (they're celebratory)
+      if (trigger.type === 'MILESTONE') return true;
+      return diffDays >= 7;
+    default:
+      return true;
+  }
+}
+
+/**
+ * Formats a SmartTrigger as a standard notification payload.
+ * 
+ * @param trigger The SmartTrigger to format
+ * @returns NotificationPayload object
+ */
+export function formatTriggerAsNotification(trigger: SmartTrigger): NotificationPayload {
+  let title: string;
+  let actionType: string;
+  
+  switch (trigger.type) {
+    case 'COMPLIANCE_LOW':
+      title = '⚠️ Compliance Alert';
+      actionType = 'VIEW_COMPLIANCE';
+      break;
+    case 'COMPLIANCE_SLIPPING':
+      title = '📊 Keep Pushing';
+      actionType = 'VIEW_PROGRESS';
+      break;
+    case 'MILESTONE':
+      title = '🎉 Achievement Unlocked!';
+      actionType = 'CELEBRATE';
+      break;
+    case 'DATA_GAP':
+      title = '⏰ Time to Weigh In';
+      actionType = 'LOG_WEIGHT';
+      break;
+    default:
+      title = 'Pace Coach Update';
+      actionType = 'VIEW_DASHBOARD';
+  }
+  
+  return {
+    title,
+    body: trigger.message,
+    actionType
+  };
+}
+
+/**
+ * Unified enhanced check-in processor that replaces basic check-in logic.
+ * Chains tier calculation, adjustment determination, profile updates, and trigger evaluation.
+ * 
+ * @param userId User ID
+ * @param checkInData Object containing weight and optional notes
+ * @returns CheckInResult with new target, adjustment, trend rate, and any triggered alerts
+ */
+export async function processEnhancedCheckIn(
+  userId: string,
+  checkInData: { weight: number; notes?: string }
+): Promise<CheckInResult> {
+  const { db } = await import('../db/database');
+  const { getISOWeek, calculateTrendRateWithTier, determineAdjustment, calculateSuggestedIntake } = await import('./paceCoach');
+  
+  // Step 1: Validate input
+  if (!checkInData.weight || checkInData.weight <= 0) {
+    throw new Error('Invalid weight value provided');
+  }
+  
+  // Step 2: Get user profile and TDEE settings
+  const userProfile = await db.user_profiles
+    .where('user_id')
+    .equals(userId)
+    .first();
+  
+  const tdeeSettings = await db.tdee_settings
+    .where('user_id')
+    .equals(userId)
+    .first();
+  
+  if (!tdeeSettings) {
+    throw new Error('User TDEE settings not found');
+  }
+  
+  const currentTarget = userProfile?.current_target_calories || tdeeSettings.cuttingCalories || 2000;
+  const goalRate = userProfile?.goal_rate_lbs_per_week || tdeeSettings.targetLossRate || -1;
+  const currentTDEE = tdeeSettings.tdee || 2000;
+  const bmr = undefined; // Could be added to TDEESettings if needed
+  const gender = tdeeSettings.gender;
+  const currentWeight = checkInData.weight;
+  
+  // Step 3: Save the weight log
+  await db.weights.add({
+    user_id: userId,
+    date: new Date().toISOString(),
+    weight: checkInData.weight,
+    unit: 'lbs',
+    notes: checkInData.notes
+  });
+  
+  // Step 4: Calculate trend rate with tier
+  const currentIsoWeek = getISOWeek(new Date());
+  const trendResult = await calculateTrendRateWithTier(userId, currentIsoWeek);
+  
+  // Step 5: Determine adjustment (with boundary safeguards)
+  let adjustmentAmount = 0;
+  let newTarget = currentTarget;
+  
+  if (trendResult.canCalculate) {
+    const adjustmentResult = determineAdjustment({
+      trendRateLbsPerWeek: trendResult.trendRateLbsPerWeek,
+      goalRateLbsPerWeek: goalRate,
+      currentTarget,
+      adjustmentStep: 75
+    });
+    
+    adjustmentAmount = adjustmentResult.adjustmentKcal;
+    
+    // Apply boundary safeguards
+    newTarget = currentTarget + adjustmentAmount;
+    
+    // Floor safeguard
+    let floor = 1200;
+    if (gender === 'male') floor = 1500;
+    if (bmr) floor = Math.max(floor, bmr * 0.8);
+    newTarget = Math.max(newTarget, floor);
+    
+    // Max rate ceiling
+    if (currentWeight && (Math.abs(goalRate) / currentWeight) > 0.01) {
+      const maxSafeLossPerWeek = currentWeight * 0.01;
+      const maxSafeDeficit = (maxSafeLossPerWeek / 7) * 3500;
+      const minTarget = currentTDEE - maxSafeDeficit;
+      newTarget = Math.max(newTarget, Math.round(minTarget));
+    }
+    
+    // Adjustment throttle
+    const diff = newTarget - currentTarget;
+    const MAX_STEP = 150;
+    if (Math.abs(diff) > MAX_STEP) {
+      newTarget = currentTarget + (diff > 0 ? MAX_STEP : -MAX_STEP);
+      adjustmentAmount = newTarget - currentTarget;
+    }
+  } else {
+    // Cannot calculate trend, use fallback
+    newTarget = calculateSuggestedIntake({
+      currentTDEE,
+      goalLbsPerWeek: Math.abs(goalRate),
+      lastSuggestedIntake: currentTarget,
+      bmr,
+      gender,
+      currentWeight
+    });
+    adjustmentAmount = newTarget - currentTarget;
+  }
+  
+  // Step 6: Update UserProfile
+  const now = new Date().toISOString();
+  
+  if (userProfile) {
+    // Update existing profile
+    let newStreak = userProfile.consecutive_compliant_weeks;
+    
+    // Check if current week is eligible for incrementing streak
+    const currentWeekMetrics = await db.weekly_metrics
+      .where('[user_id+iso_week]')
+      .equals([userId, currentIsoWeek])
+      .first();
+    
+    if (currentWeekMetrics && currentWeekMetrics.adjustment_eligible) {
+      newStreak = userProfile.consecutive_compliant_weeks + 1;
+    } else if (currentWeekMetrics && !currentWeekMetrics.adjustment_eligible) {
+      // Reset streak on non-compliant week
+      newStreak = 0;
+    }
+    
+    await db.user_profiles.update(userProfile.user_id, {
+      current_target_calories: newTarget,
+      last_check_in_date: now,
+      consecutive_compliant_weeks: newStreak,
+      updated_at: now
+    });
+  } else {
+    // Create new profile
+    await db.user_profiles.add({
+      user_id: userId,
+      consecutive_compliant_weeks: 0,
+      last_check_in_date: now,
+      current_target_calories: newTarget,
+      goal_rate_lbs_per_week: goalRate,
+      created_at: now,
+      updated_at: now
+    });
+  }
+  
+  // Step 7: Evaluate smart triggers based on this check-in
+  const triggers = await evaluateSmartTriggers(userId);
+  
+  // Step 8: Return result
+  return {
+    newTarget,
+    adjustmentAmount,
+    trendRate: trendResult.trendRateLbsPerWeek,
+    triggers
+  };
+}
