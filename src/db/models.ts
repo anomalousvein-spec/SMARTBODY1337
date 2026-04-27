@@ -57,4 +57,5 @@ export interface PaceCoachCheckIn {
   targetLossRate: number;
   suggestedIntake: number;
   calculatedTDEE: number;
+  weightSlopeLbsPerDay?: number;
 }

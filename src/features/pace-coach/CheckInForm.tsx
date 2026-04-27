@@ -90,7 +90,8 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
         averageIntake: intake,
         targetLossRate: settings.targetLossRate || 1,
         suggestedIntake: suggestion,
-        calculatedTDEE
+        calculatedTDEE,
+        weightSlopeLbsPerDay: slope
       };
 
       await db.pace_coach_checkins.add(checkIn);
