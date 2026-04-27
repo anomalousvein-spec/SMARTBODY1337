@@ -7,12 +7,23 @@ import {
   MIN_AGE,
   MAX_AGE,
   LBS_TO_KG,
-  INCHES_TO_CM
+  INCHES_TO_CM,
+  KG_TO_LBS
 } from '../../config/constants';
-import { calculateBMR, calculateTDEE, getUserPhase, calculateAdvancedBMR, calculateAdvancedMacros, AdvancedBMRResult, AdvancedMacroTargets } from '../../utils/calculations';
+import {
+  calculateBMR,
+  calculateTDEE,
+  getUserPhase,
+  calculateAdvancedBMR,
+  calculateAdvancedMacros,
+  AdvancedBMRResult,
+  AdvancedMacroTargets
+} from '../../utils/calculations';
 import { validateWeight } from '../../utils/validation';
 import { useApp } from '../../context/AppContext';
 import { PaceCoachSettings } from '../pace-coach/PaceCoachSettings';
+import { StandardResultsView } from './components/StandardResultsView';
+import { AdvancedResultsView } from './components/AdvancedResultsView';
 
 const ACTIVITY_LEVELS = [
   { value: 'sedentary', label: 'Sedentary (Little/No Exercise)' },
@@ -57,6 +68,7 @@ export function TDEECalculator() {
       setHeight(fullSettings.height.toString());
       setHeightUnit(fullSettings.heightUnit);
       setWeight(fullSettings.currentWeight?.toString() || '');
+      setWeightUnit(fullSettings.heightUnit === 'in' ? 'lbs' : 'kg'); // Sync with height unit preference for consistency
       setActivityLevel(fullSettings.activityLevel);
       setTargetWeight(fullSettings.targetWeight?.toString() || '');
       setTargetLossRate(fullSettings.targetLossRate?.toString() || '');
@@ -69,25 +81,24 @@ export function TDEECalculator() {
       setMeasurementUnit(fullSettings.measurementUnit || 'in');
 
       if (fullSettings.tdee && fullSettings.cuttingCalories) {
-        const weightKg = (fullSettings.currentWeight || 0) * (fullSettings.heightUnit === 'in' ? 0.453592 : 1); // Approximation for initial load
-        // Actually, let's use proper constants if possible or just wait for manual calculate
-        // But the user might want to see results immediately
         const wKg = (fullSettings.currentWeight || 0) * (fullSettings.heightUnit === 'in' ? LBS_TO_KG : 1);
         const hCm = fullSettings.height * (fullSettings.heightUnit === 'in' ? INCHES_TO_CM : 1);
 
         let bmrValue = 0;
+        let adv: AdvancedBMRResult | null = null;
+        let macros: AdvancedMacroTargets | null = null;
+
         if (mode === 'advanced' && fullSettings.waist && fullSettings.neck) {
            const wCm = (fullSettings.measurementUnit === 'in' ? fullSettings.waist * INCHES_TO_CM : fullSettings.waist);
            const nCm = (fullSettings.measurementUnit === 'in' ? fullSettings.neck * INCHES_TO_CM : fullSettings.neck);
            const hiCm = fullSettings.hip ? (fullSettings.measurementUnit === 'in' ? fullSettings.hip * INCHES_TO_CM : fullSettings.hip) : undefined;
 
-           const adv = calculateAdvancedBMR(wKg, hCm, wCm, nCm, hiCm, fullSettings.gender);
+           adv = calculateAdvancedBMR(wKg, hCm, wCm, nCm, hiCm, fullSettings.gender);
            setAdvancedResults(adv);
            bmrValue = adv.bmr;
 
-           const goalWeightLbs = fullSettings.targetWeight ? (fullSettings.heightUnit === 'cm' ? fullSettings.targetWeight * 2.20462 : fullSettings.targetWeight) : undefined;
-           const targetCals = fullSettings.cuttingCalories;
-           const macros = calculateAdvancedMacros(adv.leanBodyMass, goalWeightLbs, adv.bmr, fullSettings.tdee, targetCals);
+           const goalWeightLbs = fullSettings.targetWeight ? (fullSettings.heightUnit === 'cm' ? fullSettings.targetWeight * KG_TO_LBS : fullSettings.targetWeight) : undefined;
+           macros = calculateAdvancedMacros(adv.leanBodyMass, goalWeightLbs, adv.bmr, fullSettings.tdee, fullSettings.cuttingCalories);
            setMacroTargets(macros);
         } else {
            bmrValue = calculateBMR(wKg, hCm, fullSettings.age, fullSettings.gender);
@@ -105,9 +116,10 @@ export function TDEECalculator() {
   const handleHeightUnitChange = (unit: string) => {
     const val = parseFloat(height);
     if (!isNaN(val)) {
-      setHeight(unit === 'cm' ? (val * 2.54).toFixed(1) : (val / 2.54).toFixed(1));
+      setHeight(unit === 'cm' ? (val * INCHES_TO_CM).toFixed(1) : (val / INCHES_TO_CM).toFixed(1));
     }
     setHeightUnit(unit as 'in' | 'cm');
+    setWeightUnit(unit === 'in' ? 'lbs' : 'kg');
   };
 
   const handleMeasurementUnitChange = (unit: string) => {
@@ -116,13 +128,13 @@ export function TDEECalculator() {
     const hipVal = parseFloat(hip);
     
     if (!isNaN(waistVal)) {
-      setWaist(unit === 'cm' ? (waistVal * 2.54).toFixed(1) : (waistVal / 2.54).toFixed(1));
+      setWaist(unit === 'cm' ? (waistVal * INCHES_TO_CM).toFixed(1) : (waistVal / INCHES_TO_CM).toFixed(1));
     }
     if (!isNaN(neckVal)) {
-      setNeck(unit === 'cm' ? (neckVal * 2.54).toFixed(1) : (neckVal / 2.54).toFixed(1));
+      setNeck(unit === 'cm' ? (neckVal * INCHES_TO_CM).toFixed(1) : (neckVal / INCHES_TO_CM).toFixed(1));
     }
     if (!isNaN(hipVal)) {
-      setHip(unit === 'cm' ? (hipVal * 2.54).toFixed(1) : (hipVal / 2.54).toFixed(1));
+      setHip(unit === 'cm' ? (hipVal * INCHES_TO_CM).toFixed(1) : (hipVal / INCHES_TO_CM).toFixed(1));
     }
     setMeasurementUnit(unit as 'in' | 'cm');
   };
@@ -171,7 +183,7 @@ export function TDEECalculator() {
         
         const waistCm = measurementUnit === 'in' ? waistValue * INCHES_TO_CM : waistValue;
         const neckCm = measurementUnit === 'in' ? neckValue * INCHES_TO_CM : neckValue;
-        const hipCm = hipValue !== undefined 
+        const hipCm = (hipValue !== undefined && hipValue > 0)
           ? (measurementUnit === 'in' ? hipValue * INCHES_TO_CM : hipValue)
           : undefined;
 
@@ -187,7 +199,7 @@ export function TDEECalculator() {
       let macroTargetsResult: AdvancedMacroTargets | null = null;
       if (advResults && useAdvancedMode) {
         const goalWeightLbs = targetWeightValue 
-          ? (weightUnit === 'kg' ? targetWeightValue * 2.20462 : targetWeightValue)
+          ? (weightUnit === 'kg' ? targetWeightValue * KG_TO_LBS : targetWeightValue)
           : undefined;
         
         macroTargetsResult = calculateAdvancedMacros(
@@ -287,7 +299,16 @@ export function TDEECalculator() {
         {/* Advanced Mode Fields - Hidden if Standard */}
         {useAdvancedMode && (
           <div className="mt-4 pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-            <h4 className="text-sm font-semibold text-theme-text-primary">Advanced Biometrics</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-theme-text-primary">Advanced Biometrics</h4>
+              <SelectField
+                label=""
+                value={measurementUnit}
+                onChange={handleMeasurementUnitChange}
+                options={[{ value: 'in', label: 'IN' }, { value: 'cm', label: 'CM' }]}
+                className="w-24"
+              />
+            </div>
             <p className="text-xs text-theme-text-tertiary italic">
               💡 Uses Lean Body Mass (LBM) to calculate BMR. Best for users with higher-than-average muscle mass.
             </p>
@@ -324,15 +345,6 @@ export function TDEECalculator() {
                 placeholder={measurementUnit === 'in' ? 'e.g., 38' : 'e.g., 97'}
               />
             )}
-
-            <div className="flex items-center gap-2">
-              <SelectField
-                label="Measurement Unit"
-                value={measurementUnit}
-                onChange={handleMeasurementUnitChange}
-                options={[{ value: 'in', label: 'inches' }, { value: 'cm', label: 'cm' }]}
-              />
-            </div>
           </div>
         )}
 
@@ -354,87 +366,20 @@ export function TDEECalculator() {
           <h3 className="text-lg font-semibold text-theme-text-primary mb-4">Your Results</h3>
           
           {useAdvancedMode && advancedResults ? (
-            /* Advanced Mode Results View */
-            <div className="space-y-6">
-              <div className="p-4 bg-theme-bg-tertiary/30 border border-white/5 rounded-xl">
-                <h4 className="text-sm font-semibold text-theme-text-primary mb-3">Advanced Composition Results</h4>
-
-                <div className="space-y-4">
-                   <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-2">Body Composition</p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                         <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-lg p-3">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Estimated Body Fat</p>
-                            <p className="text-lg font-bold text-theme-accent">{advancedResults.avgBodyFat.toFixed(1)}% <span className="text-[10px] font-normal text-theme-text-tertiary">(Composite)</span></p>
-                         </div>
-                         <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-lg p-3">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Lean Body Mass</p>
-                            <p className="text-lg font-bold text-green-400">{(advancedResults.leanBodyMass * 2.20462).toFixed(1)} lbs</p>
-                         </div>
-                         <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-lg p-3">
-                            <p className="text-[9px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Waist-to-Height</p>
-                            <p className="text-lg font-bold text-cyan-400">{advancedResults.waistToHeightRatio.toFixed(2)}</p>
-                            <p className="text-[10px] text-theme-text-tertiary mt-1">
-                               {advancedResults.waistToHeightRatio < 0.5 ? '✓ Healthy Range' : '⚠ High Risk'}
-                            </p>
-                         </div>
-                      </div>
-                   </div>
-
-                   {macroTargets && (
-                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-2">Daily Nutrition Targets</p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                           <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-lg p-3">
-                              <p className="text-[9px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">BMR (Katch-McArdle)</p>
-                              <p className="text-lg font-bold text-theme-accent">{Math.round(advancedResults.bmr)} <span className="text-xs font-normal text-theme-text-tertiary uppercase">kcal</span></p>
-                           </div>
-                           <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-lg p-3">
-                              <p className="text-[9px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Protein Target</p>
-                              <p className="text-lg font-bold text-orange-400">{Math.round(macroTargets.proteinMin)}-{Math.round(macroTargets.proteinMax)}g</p>
-                              <p className="text-[10px] text-theme-text-tertiary">Optimized for Lean Mass</p>
-                           </div>
-                           <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-lg p-3">
-                              <p className="text-[9px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Minimum Fat</p>
-                              <p className="text-lg font-bold text-yellow-400">{Math.round(macroTargets.fatMin)}g</p>
-                              <p className="text-[10px] text-theme-text-tertiary">Hormonal Floor</p>
-                           </div>
-                        </div>
-                     </div>
-                   )}
-                </div>
-                <p className="text-xs text-theme-text-tertiary mt-4 italic">
-                  “Meeting your Protein and Fat floors ensures muscle retention and hormonal health. Adjust Carbs based on your daily activity.”
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="bg-success/10 border border-success/20 rounded-xl p-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-success mb-1">TDEE (Maintenance)</p>
-                    <p className="text-2xl font-bold text-success">{Math.round(results.tdee)} <span className="text-xs font-normal text-success uppercase">cal/day</span></p>
-                 </div>
-                 <div className={`${currentPhase.bgClass} border border-white/5 rounded-xl p-4`}>
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${currentPhase.colorClass} mb-1`}>{currentPhase.label}</p>
-                    <p className={`text-2xl font-bold ${currentPhase.colorClass}`}>{Math.round(results.cuttingCalories)} <span className="text-xs font-normal text-theme-text-tertiary uppercase">cal/day</span></p>
-                 </div>
-              </div>
-            </div>
+            <AdvancedResultsView
+              advancedResults={advancedResults}
+              macroTargets={macroTargets}
+              tdee={results.tdee}
+              cuttingCalories={results.cuttingCalories}
+              currentPhase={currentPhase}
+            />
           ) : (
-            /* Standard Mode Results View */
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-xl p-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">BMR (Mifflin-St Jeor)</p>
-                <p className="text-2xl font-bold text-theme-accent">{Math.round(results.bmr)} <span className="text-xs font-normal text-theme-text-tertiary uppercase">cal/day</span></p>
-              </div>
-              <div className="bg-success/10 border border-success/20 rounded-xl p-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-success mb-1">TDEE</p>
-                <p className="text-2xl font-bold text-success">{Math.round(results.tdee)} <span className="text-xs font-normal text-success uppercase">cal/day</span></p>
-              </div>
-              <div className={`${currentPhase.bgClass} border border-white/5 rounded-xl p-4`}>
-                <p className={`text-[10px] font-black uppercase tracking-widest ${currentPhase.colorClass} mb-1`}>{currentPhase.label}</p>
-                <p className={`text-2xl font-bold ${currentPhase.colorClass}`}>{Math.round(results.cuttingCalories)} <span className="text-xs font-normal text-theme-text-tertiary uppercase">cal/day</span></p>
-              </div>
-            </div>
+            <StandardResultsView
+              bmr={results.bmr}
+              tdee={results.tdee}
+              cuttingCalories={results.cuttingCalories}
+              currentPhase={currentPhase}
+            />
           )}
         </div>
       )}

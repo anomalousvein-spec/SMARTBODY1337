@@ -1,21 +1,22 @@
 import {
   WAIST_RATIO_CATEGORIES,
-  WAIST_RATIO_DISPLAY_CATEGORIES,
   ACTIVITY_MULTIPLIERS,
-  INCHES_TO_CM
+  INCHES_TO_CM,
+  LBS_TO_KG,
+  KG_TO_LBS
 } from '../config/constants';
 
 /**
  * Calculates BMR using the Mifflin-St Jeor Equation
  */
 export function calculateBMR(
-  weight: number,
-  height: number,
+  weightKg: number,
+  heightCm: number,
   age: number,
   gender: 'male' | 'female'
 ): number {
   const genderOffset = gender === 'male' ? 5 : -161;
-  return 10 * weight + 6.25 * height - 5 * age + genderOffset;
+  return 10 * weightKg + 6.25 * heightCm - 5 * age + genderOffset;
 }
 
 /**
@@ -102,8 +103,9 @@ export function calculateAdvancedMacros(
   const proteinMin = leanBodyMassKg * 2.0;
   const proteinMax = leanBodyMassKg * 2.5;
 
-  // Fat Floor: 0.3g per lb of goal weight (or current weight if goal not set)
-  const effectiveGoalWeight = goalWeightLbs || (leanBodyMassKg * 2.2 / (1 - 0.15)); // Estimate if not provided
+  // Fat Floor: 0.3g per lb of goal weight
+  // If goal weight not provided, estimate a healthy weight based on LBM and 15% body fat
+  const effectiveGoalWeight = goalWeightLbs || (leanBodyMassKg * KG_TO_LBS / (1 - 0.15));
   const fatMin = effectiveGoalWeight * 0.3;
 
   // Calculate remaining calories after protein and fat floors
@@ -205,16 +207,6 @@ export function getWaistToHeightCategory(ratio: number): HealthCategory {
 }
 
 /**
- * Simplified display category for dashboard widgets
- */
-export function getWaistToHeightDisplayCategory(ratio: number): { label: string; color: string } {
-  if (ratio < WAIST_RATIO_DISPLAY_CATEGORIES.SLIM.threshold) return { label: 'Slim', color: 'text-blue-400' };
-  if (ratio < WAIST_RATIO_DISPLAY_CATEGORIES.HEALTHY.threshold) return { label: 'Healthy', color: 'text-green-400' };
-  if (ratio < WAIST_RATIO_DISPLAY_CATEGORIES.OVERWEIGHT.threshold) return { label: 'Overweight', color: 'text-yellow-400' };
-  return { label: 'High Risk', color: 'text-red-400' };
-}
-
-/**
  * Normalizes measurements to a single unit (defaulting to cm for internal calculations)
  */
 export function normalizeMeasurement(value: number, unit: 'in' | 'cm'): number {
@@ -253,8 +245,8 @@ export function getUserPhase(
     return {
       type: 'maintenance',
       label: 'Maintenance Target',
-      colorClass: 'text-green-500',
-      bgClass: 'bg-green-500/10'
+      colorClass: 'text-success',
+      bgClass: 'bg-success/10'
     };
   }
 
