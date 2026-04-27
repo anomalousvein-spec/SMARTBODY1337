@@ -59,3 +59,18 @@ export interface PaceCoachCheckIn {
   calculatedTDEE: number;
   weightSlopeLbsPerDay?: number;
 }
+
+export interface WeeklyMetrics {
+  id?: number;
+  user_id: string;
+  iso_week: string; // ISO week format: "YYYY-Www" (e.g., "2024-W01")
+  logged_days: number; // Number of days with calorie logs
+  compliant_days: number; // Days within ±100 kcal of target
+  compliance_score: number; // compliant_days / logged_days (0-1)
+  avg_calories_logged: number;
+  target_calories: number;
+  weight_logs_count: number;
+  adjustment_eligible: boolean;
+  hold_reason?: 'NON_COMPLIANT_HOLD' | 'INSUFFICIENT_DATA_HOLD' | null;
+  created_at: string; // ISO string
+}
