@@ -112,3 +112,83 @@ export function isCheckInDue(lastCheckInDate?: string, reminderDays: number = 10
 
   return diffDays >= reminderDays;
 }
+
+/**
+ * Calculates the next check-in date based on last check-in and frequency.
+ */
+export function getNextCheckInDate(lastCheckInDate?: string, reminderDays: number = 14): Date {
+  const lastDate = lastCheckInDate ? new Date(lastCheckInDate) : new Date();
+  const nextDate = new Date(lastDate);
+  nextDate.setDate(nextDate.getDate() + reminderDays);
+  return nextDate;
+}
+
+/**
+ * Gets the number of days until the next check-in is due.
+ * Returns 0 if already due or overdue.
+ */
+export function getDaysUntilCheckIn(lastCheckInDate?: string, reminderDays: number = 14): number {
+  if (!lastCheckInDate) return 0;
+
+  const lastDate = new Date(lastCheckInDate);
+  const now = new Date();
+  const diffTime = now.getTime() - lastDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  const daysRemaining = reminderDays - diffDays;
+  return Math.max(0, daysRemaining);
+}
+
+/**
+ * Formats a date for display (e.g., "Jan 15, 2024").
+ */
+export function formatDate(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/**
+ * Calculates average daily calorie intake from macro logs over a specified period.
+ * @param macroLogs Array of macro log entries
+ * @param daysToAverage Number of days to average over (default: 14)
+ * @returns Object with average calories and whether there's sufficient data
+ */
+export function calculateAverageIntakeFromLogs(
+  macroLogs: Array<{ date: string; calories: number }>,
+  daysToAverage: number = 14
+): { averageCalories: number; hasSufficientData: boolean; daysLogged: number } {
+  if (macroLogs.length === 0) {
+    return { averageCalories: 0, hasSufficientData: false, daysLogged: 0 };
+  }
+
+  // Sort logs by date (most recent first)
+  const sortedLogs = [...macroLogs].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+
+  // Get the most recent date
+  const mostRecentDate = new Date(sortedLogs[0].date);
+  
+  // Filter logs within the time window
+  const cutoffDate = new Date(mostRecentDate);
+  cutoffDate.setDate(cutoffDate.getDate() - daysToAverage);
+
+  const recentLogs = sortedLogs.filter(log => new Date(log.date) >= cutoffDate);
+  
+  if (recentLogs.length === 0) {
+    return { averageCalories: 0, hasSufficientData: false, daysLogged: 0 };
+  }
+
+  // Calculate average
+  const totalCalories = recentLogs.reduce((sum, log) => sum + log.calories, 0);
+  const averageCalories = Math.round(totalCalories / recentLogs.length);
+
+  // Consider sufficient data if we have at least 10 days of logs in the window
+  const hasSufficientData = recentLogs.length >= 10;
+
+  return {
+    averageCalories,
+    hasSufficientData,
+    daysLogged: recentLogs.length
+  };
+}

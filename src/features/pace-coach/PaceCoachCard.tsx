@@ -1,10 +1,11 @@
 import React from 'react';
-import { Sparkles, Info, RefreshCw, TrendingUp, TrendingDown, Minus, Target, CheckCircle, ArrowRight } from 'lucide-react';
+import { Sparkles, Info, RefreshCw, TrendingUp, TrendingDown, Minus, Target, CheckCircle, ArrowRight, Calendar, Clock } from 'lucide-react';
 import { Skeleton, Card } from '../../components';
 import { CheckInForm } from './CheckInForm';
 import { usePaceCoach } from '../../hooks/usePaceCoach';
 import { MIN_CHECKINS_FOR_METABOLISM } from '../../config/constants';
 import { useApp } from '../../context/AppContext';
+import { getNextCheckInDate, getDaysUntilCheckIn, formatDate, isCheckInDue } from '../../utils/paceCoach';
 
 export function PaceCoachCard() {
   const { user } = useApp();
@@ -17,6 +18,25 @@ export function PaceCoachCard() {
     setShowCheckInForm(false);
     refresh();
   };
+
+  // Calculate check-in timing
+  const reminderDays = settings.paceCoachReminderDays || 14;
+  const nextCheckInDate = getNextCheckInDate(lastCheckIn?.date, reminderDays);
+  const daysUntilCheckIn = getDaysUntilCheckIn(lastCheckIn?.date, reminderDays);
+  const checkInIsDue = isCheckInDue(lastCheckIn?.date, reminderDays);
+  
+  // Calculate progress through the check-in cycle
+  const calculateProgress = () => {
+    if (!lastCheckIn?.date) return 0;
+    const lastDate = new Date(lastCheckIn.date).getTime();
+    const now = new Date().getTime();
+    const totalPeriod = reminderDays * 24 * 60 * 60 * 1000;
+    const elapsed = now - lastDate;
+    const progress = Math.min(100, Math.max(0, (elapsed / totalPeriod) * 100));
+    return progress;
+  };
+  
+  const progressPercent = checkInIsDue ? 100 : calculateProgress();
 
   // Calculate weight trend info for explanation
   const getTrendInfo = () => {
@@ -38,7 +58,7 @@ export function PaceCoachCard() {
 
   const trendInfo = getTrendInfo();
   const TrendIcon = trendInfo.icon;
-  const progressPercent = (checkInCount / MIN_CHECKINS_FOR_METABOLISM) * 100;
+  const calibrationProgressPercent = (checkInCount / MIN_CHECKINS_FOR_METABOLISM) * 100;
 
   return (
     <Card className="card-hover overflow-hidden relative group">
@@ -59,10 +79,20 @@ export function PaceCoachCard() {
           {!showCheckInForm && (
             <button 
               onClick={() => setShowCheckInForm(true)} 
-              className="p-2.5 hover:bg-theme-accent/10 rounded-xl transition-all hover:scale-105 active:scale-95"
+              disabled={!checkInIsDue}
+              className={`p-2.5 rounded-xl transition-all hover:scale-105 active:scale-95 ${
+                checkInIsDue 
+                  ? 'hover:bg-theme-accent/10' 
+                  : 'bg-theme-bg-tertiary/30 cursor-not-allowed opacity-50'
+              }`}
               aria-label="Open check-in form"
+              title={!checkInIsDue ? `Check-in available in ${daysUntilCheckIn} day${daysUntilCheckIn !== 1 ? 's' : ''}` : 'Start check-in'}
             >
-              <RefreshCw className="w-4 h-4 text-theme-text-secondary hover:text-theme-accent transition-colors" />
+              <RefreshCw className={`w-4 h-4 transition-colors ${
+                checkInIsDue 
+                  ? 'text-theme-text-secondary hover:text-theme-accent' 
+                  : 'text-theme-text-tertiary'
+              }`} />
             </button>
           )}
         </div>
@@ -71,6 +101,7 @@ export function PaceCoachCard() {
           <CheckInForm
             userId={user.id}
             settings={settings}
+            lastCheckInDate={lastCheckIn?.date}
             onComplete={handleComplete}
             onCancel={() => setShowCheckInForm(false)}
           />
@@ -92,16 +123,49 @@ export function PaceCoachCard() {
                     </div>
                   </div>
                   
-                  {/* Progress Bar */}
+                  {/* Check-in Cycle Progress */}
+                  <div className="mb-4 p-4 bg-theme-bg-tertiary/30 rounded-xl border border-theme-bg-border/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-theme-text-tertiary" />
+                        <span className="text-xs font-semibold text-theme-text-secondary">Check-in Schedule</span>
+                      </div>
+                      {checkInIsDue ? (
+                        <span className="text-xs font-bold text-theme-accent animate-pulse">Ready Now!</span>
+                      ) : (
+                        <span className="text-xs text-theme-text-tertiary">{daysUntilCheckIn} day{daysUntilCheckIn !== 1 ? 's' : ''} left</span>
+                      )}
+                    </div>
+                    
+                    {/* Progress bar for current cycle */}
+                    <div className="relative">
+                      <div className="h-2 bg-theme-bg-tertiary rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full transition-all duration-500 ease-out ${
+                            checkInIsDue 
+                              ? 'bg-gradient-to-r from-green-500 to-green-400' 
+                              : 'bg-gradient-to-r from-theme-accent to-theme-accent/70'
+                          }`}
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1.5 text-[9px] text-theme-text-tertiary">
+                        <span>Last: {lastCheckIn?.date ? formatDate(lastCheckIn.date) : 'N/A'}</span>
+                        <span>Next: {formatDate(nextCheckInDate)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Calibration Progress */}
                   <div className="space-y-2">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-theme-accent">Check-in Progress</span>
+                      <span className="font-semibold text-theme-accent">Calibration Progress</span>
                       <span className="text-theme-text-tertiary">{checkInCount}/{MIN_CHECKINS_FOR_METABOLISM}</span>
                     </div>
                     <div className="h-2.5 bg-theme-bg-tertiary rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-theme-accent to-theme-accent/70 rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${progressPercent}%` }}
+                        style={{ width: `${calibrationProgressPercent}%` }}
                       />
                     </div>
                     <p className="text-[10px] text-theme-text-tertiary text-center pt-1">

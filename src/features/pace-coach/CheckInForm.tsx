@@ -1,26 +1,70 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { db } from '../../db/database';
-import { TDEESettings, PaceCoachCheckIn } from '../../db/models';
-import { calculateTrendSlope, calculateBackCalculatedTDEE, calculateSuggestedIntake } from '../../utils/paceCoach';
+import { TDEESettings, PaceCoachCheckIn, MacroEntry } from '../../db/models';
+import { calculateTrendSlope, calculateBackCalculatedTDEE, calculateSuggestedIntake, calculateAverageIntakeFromLogs } from '../../utils/paceCoach';
 import { calculateMovingAverage, calculateBMR } from '../../utils/calculations';
 import { LBS_TO_KG, KG_TO_LBS } from '../../config/constants';
 import { FormMessage } from '../../components/Form';
 import { validateCalories } from '../../utils/validation';
 import { MIN_WEIGHT_ENTRIES_FOR_CHECKIN, TREND_CALCULATION_DAYS } from '../../config/constants';
 import { useTDEESettings } from '../../hooks/useTDEESettings';
+import { Info } from 'lucide-react';
 
 interface CheckInFormProps {
   userId: string;
   settings: TDEESettings;
+  lastCheckInDate?: string;
   onComplete: (suggestion: number) => void;
   onCancel: () => void;
 }
 
-export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInFormProps) {
+export function CheckInForm({ userId, settings, lastCheckInDate, onComplete, onCancel }: CheckInFormProps) {
   const { updateSettings } = useTDEESettings(userId);
   const [averageIntake, setAverageIntake] = useState('');
+  const [suggestedIntake, setSuggestedIntake] = useState<number | null>(null);
+  const [hasSufficientData, setHasSufficientData] = useState(false);
+  const [daysLogged, setDaysLogged] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(true);
+
+  // Load macro logs and calculate suggested average intake
+  useEffect(() => {
+    const loadSuggestedIntake = async () => {
+      setIsLoadingSuggestion(true);
+      try {
+        // Determine the date range (since last check-in or last 14 days)
+        const startDate = lastCheckInDate ? new Date(lastCheckInDate) : new Date();
+        if (lastCheckInDate) {
+          startDate.setDate(startDate.getDate() + 1); // Start from day after last check-in
+        } else {
+          startDate.setDate(startDate.getDate() - 14); // Default to 14 days ago
+        }
+
+        const macroLogs = await db.macro_logs
+          .where('user_id')
+          .equals(userId)
+          .filter(log => new Date(log.date) >= startDate)
+          .toArray();
+
+        const result = calculateAverageIntakeFromLogs(macroLogs, 14);
+        
+        if (result.hasSufficientData) {
+          setSuggestedIntake(result.averageCalories);
+          setHasSufficientData(true);
+          setDaysLogged(result.daysLogged);
+          // Pre-fill the input with suggested value
+          setAverageIntake(result.averageCalories.toString());
+        }
+      } catch (err) {
+        console.error('Error loading macro logs:', err);
+      } finally {
+        setIsLoadingSuggestion(false);
+      }
+    };
+
+    loadSuggestedIntake();
+  }, [userId, lastCheckInDate]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,9 +160,36 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
       </h3>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <label htmlFor="checkin-intake" className="text-xs text-theme-text-tertiary mb-4 block">
-          Over the past 10–14 days, what was your average daily calorie intake?
-        </label>
+        <div>
+          <label htmlFor="checkin-intake" className="text-xs text-theme-text-tertiary mb-2 block">
+            Over the past 10–14 days, what was your average daily calorie intake?
+          </label>
+          
+          {isLoadingSuggestion ? (
+            <div className="text-xs text-theme-text-tertiary italic animate-pulse">
+              Loading your logging data...
+            </div>
+          ) : hasSufficientData && suggestedIntake !== null ? (
+            <div className="flex items-start gap-2 mb-2 p-2.5 bg-theme-accent/10 rounded-lg border border-theme-accent/20">
+              <Info className="w-4 h-4 text-theme-accent shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-xs text-theme-text-secondary">
+                  <strong className="text-theme-text-primary">Based on your logs:</strong> You logged <strong>{daysLogged} days</strong> with an average of <strong className="text-theme-accent">{suggestedIntake} kcal/day</strong>
+                </p>
+                <p className="text-[10px] text-theme-text-tertiary mt-1">
+                  This is pre-filled below. Adjust if needed or enter your own estimate.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 mb-2 p-2.5 bg-theme-bg-tertiary/50 rounded-lg border border-theme-bg-border/50">
+              <Info className="w-4 h-4 text-theme-text-tertiary shrink-0 mt-0.5" />
+              <p className="text-xs text-theme-text-tertiary">
+                Not enough logging data to suggest an average. Please estimate your average daily intake over the past 10-14 days.
+              </p>
+            </div>
+          )}
+        </div>
 
         {error && <FormMessage type="error" message={error} />}
         
@@ -132,7 +203,7 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
               placeholder="e.g. 1800"
               className="w-full px-4 py-2 rounded-lg border border-white/10 bg-theme-bg-tertiary text-theme-text-primary focus:ring-2 focus:ring-theme-accent focus:border-transparent"
               required
-              autoFocus
+              autoFocus={!hasSufficientData}
             />
             <span className="absolute right-3 top-2 text-xs text-theme-text-tertiary" aria-hidden="true">kcal/day</span>
           </div>
