@@ -74,3 +74,13 @@ export interface WeeklyMetrics {
   hold_reason?: 'NON_COMPLIANT_HOLD' | 'INSUFFICIENT_DATA_HOLD' | null;
   created_at: string; // ISO string
 }
+
+export interface UserProfile {
+  user_id: string;
+  consecutive_compliant_weeks: number;
+  last_check_in_date?: string;
+  current_target_calories: number;
+  goal_rate_lbs_per_week: number;
+  created_at: string;
+  updated_at: string;
+}
