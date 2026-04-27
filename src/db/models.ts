@@ -32,6 +32,12 @@ export interface TDEESettings {
   tdee?: number; // Maintenance calories
   cuttingCalories?: number; // Deficit calories
   lastUpdated: string;
+  // Advanced Mode fields
+  calculationMode?: 'standard' | 'advanced';
+  waist?: number;
+  neck?: number;
+  hip?: number;
+  measurementUnit?: 'in' | 'cm';
   // Pace Coach settings
   paceCoachEnabled?: boolean;
   paceCoachReminderDays?: number;
