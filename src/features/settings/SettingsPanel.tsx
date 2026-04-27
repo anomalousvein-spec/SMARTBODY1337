@@ -48,7 +48,7 @@ export function SettingsPanel() {
         <h2 className="text-2xl font-black uppercase tracking-tight text-theme-text-primary">
           Settings
         </h2>
-        <p className="text-xs font-bold uppercase tracking-widest text-theme-text-tertiary">
+        <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">
           Configure your experience
         </p>
       </div>
@@ -98,7 +98,7 @@ export function SettingsPanel() {
             </div>
             <div>
               <p className="text-sm font-bold text-theme-text-primary">Clear Local Data</p>
-              <p className="text-[10px] text-theme-text-tertiary">Permanently delete all logs and settings</p>
+              <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">Permanently delete all logs and settings</p>
             </div>
           </div>
           <button
@@ -115,7 +115,7 @@ export function SettingsPanel() {
           </div>
           <div>
             <p className="text-sm font-bold text-theme-text-primary">Local Storage Only</p>
-            <p className="text-[10px] text-theme-text-tertiary">All your health data stays on this device</p>
+            <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">All your health data stays on this device</p>
           </div>
         </Card>
       </section>
@@ -131,7 +131,7 @@ export function SettingsPanel() {
           </div>
           <div>
             <p className="text-sm font-bold text-theme-text-primary">Private by Design</p>
-            <p className="text-[10px] text-theme-text-tertiary">No tracking or external data processing</p>
+            <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">No tracking or external data processing</p>
           </div>
         </Card>
       </section>
@@ -139,7 +139,7 @@ export function SettingsPanel() {
       <section className="space-y-4 pt-4">
         <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl flex gap-3 items-start">
           <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
-          <p className="text-[10px] text-orange-500/80 leading-relaxed font-medium">
+          <p className="text-[10px] text-orange-500/80 leading-relaxed font-bold uppercase tracking-wide">
             This app is a client-side PWA. Clearing your browser cache or deleting site data through browser settings may also erase your logs. We recommend regular data exports (coming soon).
           </p>
         </div>

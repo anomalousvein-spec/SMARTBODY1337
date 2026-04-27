@@ -22,25 +22,34 @@ export const CalorieOverview = memo(({ metrics }: CalorieOverviewProps) => {
       <Card className="card-hover">
         <h3 className="text-lg font-bold text-theme-text-primary mb-4">Calorie Overview</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-theme-bg-tertiary/50 rounded-lg">
-            <div className="text-xs text-theme-text-tertiary mb-1">Maintenance</div>
+          <div className="text-center p-4 bg-theme-bg-tertiary/40 border border-white/5 rounded-xl transition-colors hover:bg-theme-bg-tertiary/60">
+            <div className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">Maintenance</div>
             <div className="text-xl font-bold text-theme-text-primary">{Math.round(metrics?.maintenanceCalories ?? 2000)}</div>
-            <div className="text-xs text-theme-text-tertiary">cal/day</div>
+            <div className="text-[10px] font-bold text-theme-text-tertiary uppercase tracking-wide">cal/day</div>
           </div>
-          <div className={`text-center p-3 ${phase.bgClass} rounded-lg`}>
-            <div className={`text-xs ${phase.colorClass} mb-1`}>{phase.label}</div>
+          <div className={`text-center p-4 ${phase.bgClass} border border-white/5 rounded-xl transition-colors`}>
+            <div className={`text-[10px] font-black uppercase tracking-widest ${phase.colorClass} mb-1`}>{phase.label}</div>
             <div className={`text-xl font-bold ${phase.colorClass}`}>{Math.round(metrics?.cuttingCalories ?? 1500)}</div>
-            <div className={`text-xs ${phase.colorClass}`}>cal/day</div>
+            <div className={`text-[10px] font-bold ${phase.colorClass} uppercase tracking-wide`}>cal/day</div>
           </div>
         </div>
         {metrics?.todayMacros && (
           <div className="mt-4 pt-4 border-t border-white/5">
-            <div className="flex justify-between items-center"><span className="text-sm text-theme-text-tertiary">Today's Intake</span><span className="text-lg font-bold text-theme-text-primary">{metrics.todayMacros.calories} cal</span></div>
-            <div className="flex justify-between items-center mt-2"><span className="text-sm text-theme-text-tertiary">Protein</span><span className="text-sm font-medium text-theme-text-primary">{metrics.todayMacros.protein}g</span></div>
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">Today's Intake</span>
+              <span className="text-lg font-bold text-theme-text-primary">{metrics.todayMacros.calories} cal</span>
+            </div>
+            <div className="flex justify-between items-center mt-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">Protein</span>
+              <span className="text-sm font-bold text-theme-text-primary">{metrics.todayMacros.protein}g</span>
+            </div>
           </div>
         )}
         {!metrics?.todayMacros && (
-          <div className="mt-4 p-3 bg-yellow-500/10 rounded-lg flex items-center gap-2"><AlertCircle className="w-4 h-4 text-yellow-400" /><span className="text-sm text-yellow-700 dark:text-yellow-400">No macros logged today</span></div>
+          <div className="mt-4 p-3 bg-warning/10 rounded-xl border border-warning/20 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-warning" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-warning">No macros logged today</span>
+          </div>
         )}
       </Card>
     </motion.div>

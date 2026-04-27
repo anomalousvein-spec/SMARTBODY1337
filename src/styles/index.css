@@ -10,6 +10,7 @@
   --color-theme-text-tertiary: var(--text-tertiary);
   --color-error: #cf6679;
   --color-success: #03dac6;
+  --color-warning: #f4b400;
 }
 
 :root {

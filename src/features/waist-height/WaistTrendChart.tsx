@@ -6,8 +6,9 @@ import { useWaistMeasurements } from '../../hooks/useWaistMeasurements';
 import { useApp } from '../../context/AppContext';
 import { Line } from 'react-chartjs-2';
 import { Card, Skeleton } from '../../components';
-import { Ruler } from 'lucide-react';
+import { Ruler, Trash2 } from 'lucide-react';
 import { WaistEntry } from '../../db/models';
+import { db } from '../../db/database';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,7 +31,7 @@ interface WaistTrendChartProps {
 export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
   const { user, theme } = useApp();
   const userId = user.id;
-  const { measurements: waistEntries, isLoading } = useWaistMeasurements(userId, startDate, endDate);
+  const { measurements: waistEntries, isLoading, refresh } = useWaistMeasurements(userId, startDate, endDate);
   const [chartColors, setChartColors] = useState({
     accent: '#a855f7',
     text: '#71717a',
@@ -44,7 +45,17 @@ export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
       text: style.getPropertyValue('--text-secondary').trim() || '#71717a',
       grid: theme === 'amoled' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.05)'
     });
-  }, [theme]);
+  }, [theme, theme]);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this waist measurement?')) return;
+    try {
+      await db.waist_measurements.delete(id);
+      refresh();
+    } catch (error) {
+      console.error('Error deleting waist measurement:', error);
+    }
+  };
 
   const chartData = useMemo(() => {
     if (waistEntries.length === 0) return { labels: [], datasets: [] };
@@ -143,6 +154,31 @@ export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
   return (
     <Card className="card-hover">
       <div className="h-80"><Line data={chartData} options={options} /></div>
+      <div className="mt-6 space-y-2">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary px-1">Recent Entries</h3>
+        <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+          {waistEntries.slice(-10).reverse().map((entry: WaistEntry) => (
+            <div key={entry.id} className="flex items-center justify-between p-3 rounded-xl bg-theme-bg-tertiary/40 border border-white/5 hover:bg-theme-bg-tertiary/60 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Ruler className="w-3.5 h-3.5 text-purple-400" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-bold text-theme-text-primary">{entry.measurement} <span className="text-[10px] font-medium text-theme-text-tertiary uppercase">{entry.unit}</span></span>
+                  <span className="text-[9px] font-bold text-theme-text-tertiary uppercase tracking-wide">{formatDisplayDate(new Date(entry.date))}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDelete(entry.id!)}
+                className="p-2 rounded-lg hover:bg-error/10 text-theme-text-tertiary hover:text-error transition-all active:scale-90"
+                aria-label="Delete entry"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </Card>
   );
 }

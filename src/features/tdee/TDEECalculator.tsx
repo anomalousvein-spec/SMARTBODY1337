@@ -1,45 +1,50 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { calculateBMR, calculateTDEE, getUserPhase } from '../../utils/calculations';
+import React, { useState, useEffect } from 'react';
 import { InputField, SelectField, FormMessage, SubmitButton } from '../../components/Form';
 import { Card, Skeleton } from '../../components';
-import { validateAge, validateHeight, validateWeight } from '../../utils/validation';
-import {
-  MIN_AGE, MAX_AGE,
-  INCHES_TO_CM, CM_TO_IN,
-  LBS_TO_KG, KG_TO_LBS
-} from '../../config/constants';
-import { PaceCoachSettings } from '../pace-coach/PaceCoachSettings';
-import { useApp } from '../../context/AppContext';
 import { useTDEESettings } from '../../hooks/useTDEESettings';
 import { TDEESettings } from '../../db/models';
+import {
+  MIN_AGE,
+  MAX_AGE,
+  LBS_TO_KG,
+  INCHES_TO_CM
+} from '../../config/constants';
+import { calculateBMR, calculateTDEE, getUserPhase } from '../../utils/calculations';
+import { validateWeight } from '../../utils/validation';
+import { useApp } from '../../context/AppContext';
+import { PaceCoachSettings } from '../pace-coach/PaceCoachSettings';
 
 const ACTIVITY_LEVELS = [
-  { value: 'sedentary', label: 'Sedentary (Office job, little exercise)' },
-  { value: 'lightly_active', label: 'Lightly Active (1-2 days/week exercise)' },
-  { value: 'moderately_active', label: 'Moderately Active (3-5 days/week exercise)' },
-  { value: 'very_active', label: 'Very Active (6-7 days/week heavy exercise)' },
-  { value: 'extra_active', label: 'Extra Active (Professional athlete, physical job)' },
+  { value: 'sedentary', label: 'Sedentary (Little/No Exercise)' },
+  { value: 'lightly_active', label: 'Lightly Active (1-3 days/week)' },
+  { value: 'moderately_active', label: 'Moderately Active (3-5 days/week)' },
+  { value: 'very_active', label: 'Very Active (6-7 days/week)' },
+  { value: 'extra_active', label: 'Extra Active (Professional Athlete)' },
 ];
 
+/**
+ * TDEE Calculator and Profile Settings component
+ * Integrated with the centralized form components
+ */
 export function TDEECalculator() {
   const { user } = useApp();
   const userId = user.id;
   const { settings: fullSettings, isLoading, updateSettings } = useTDEESettings(userId);
 
-  const [age, setAge] = useState('30');
+  const [age, setAge] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
-  const [height, setHeight] = useState('70');
+  const [height, setHeight] = useState('');
   const [heightUnit, setHeightUnit] = useState<'in' | 'cm'>('in');
-  const [weight, setWeight] = useState('180');
+  const [weight, setWeight] = useState('');
   const [weightUnit, setWeightUnit] = useState<'lbs' | 'kg'>('lbs');
   const [activityLevel, setActivityLevel] = useState<TDEESettings['activityLevel']>('moderately_active');
   const [targetWeight, setTargetWeight] = useState('');
-  const [targetLossRate, setTargetLossRate] = useState('1');
+  const [targetLossRate, setTargetLossRate] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
-  const [results, setResults] = useState<{ bmr: number; tdee: number; cuttingCalories: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [results, setResults] = useState<{ bmr: number; tdee: number; cuttingCalories: number } | null>(null);
 
   useEffect(() => {
     if (fullSettings) {
@@ -47,58 +52,34 @@ export function TDEECalculator() {
       setGender(fullSettings.gender);
       setHeight(fullSettings.height.toString());
       setHeightUnit(fullSettings.heightUnit);
-      setWeight(fullSettings.currentWeight?.toString() || '180');
-      // Default weight unit based on height unit is a reasonable assumption for initial display
-      setWeightUnit(fullSettings.heightUnit === 'in' ? 'lbs' : 'kg');
+      setWeight(fullSettings.currentWeight?.toString() || '');
       setActivityLevel(fullSettings.activityLevel);
       setTargetWeight(fullSettings.targetWeight?.toString() || '');
-      setTargetLossRate(fullSettings.targetLossRate?.toString() || '1');
+      setTargetLossRate(fullSettings.targetLossRate?.toString() || '');
 
-      const currentWeightVal = fullSettings.currentWeight || 180;
-      // Assume weight matches height unit system (imperial vs metric)
-      const weightKg = fullSettings.heightUnit === 'in' ? currentWeightVal * LBS_TO_KG : currentWeightVal;
-      const heightCm = fullSettings.heightUnit === 'in' ? fullSettings.height * INCHES_TO_CM : fullSettings.height;
-      const bmr = calculateBMR(weightKg, heightCm, fullSettings.age, fullSettings.gender);
-      const tdee = calculateTDEE(bmr, fullSettings.activityLevel);
-      // Use stored cuttingCalories if available, otherwise calculate from targetLossRate
-      const cuttingCalories = fullSettings.cuttingCalories || Math.round(tdee - (fullSettings.targetLossRate || 0) * 500);
-      setResults({ bmr, tdee, cuttingCalories });
+      if (fullSettings.tdee && fullSettings.cuttingCalories) {
+        setResults({
+          bmr: fullSettings.tdee / 1.5, // Approximation for initial view
+          tdee: fullSettings.tdee,
+          cuttingCalories: fullSettings.cuttingCalories
+        });
+      }
     }
   }, [fullSettings]);
 
-  const handleWeightUnitChange = useCallback((newUnit: string) => {
-    const val = parseFloat(weight);
-    if (!isNaN(val)) {
-      if (newUnit === 'kg' && weightUnit === 'lbs') {
-        setWeight((val * LBS_TO_KG).toFixed(1));
-      } else if (newUnit === 'lbs' && weightUnit === 'kg') {
-        setWeight((val * KG_TO_LBS).toFixed(1));
-      }
-    }
-    setWeightUnit(newUnit as 'lbs' | 'kg');
-  }, [weight, weightUnit]);
-
-  const handleHeightUnitChange = useCallback((newUnit: string) => {
+  const handleHeightUnitChange = (unit: string) => {
     const val = parseFloat(height);
     if (!isNaN(val)) {
-      if (newUnit === 'cm' && heightUnit === 'in') {
-        setHeight((val * INCHES_TO_CM).toFixed(1));
-      } else if (newUnit === 'in' && heightUnit === 'cm') {
-        setHeight((val * CM_TO_IN).toFixed(1));
-      }
+      setHeight(unit === 'cm' ? (val * 2.54).toFixed(1) : (val / 2.54).toFixed(1));
     }
-    setHeightUnit(newUnit as 'in' | 'cm');
-  }, [height, heightUnit]);
+    setHeightUnit(unit as 'in' | 'cm');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
 
-    const ageVal = validateAge(age);
-    if (!ageVal.valid) { setError(ageVal.error!); return; }
-    const heightVal = validateHeight(height, heightUnit);
-    if (!heightVal.valid) { setError(heightVal.error!); return; }
     const weightVal = validateWeight(weight);
     if (!weightVal.valid) { setError(weightVal.error!); return; }
 
@@ -115,10 +96,6 @@ export function TDEECalculator() {
       const bmr = calculateBMR(weightKg, heightCm, ageValue, gender);
       const tdee = calculateTDEE(bmr, activityLevel);
       
-      // Calculate target calories based on actual target loss rate
-      // 1 lb/week = 500 cal/day deficit, so: targetCalories = TDEE - (targetLossRate * 500)
-      // If targetLossRate is 0, targetCalories = TDEE (maintenance)
-      // If targetLossRate is negative (surplus), targetCalories > TDEE
       const targetCalories = Math.round(tdee - (targetLossRateValue || 0) * 500);
 
       await updateSettings({
@@ -163,7 +140,7 @@ export function TDEECalculator() {
 
         <div className="grid grid-cols-2 gap-4">
           <InputField label="Current Weight" type="number" value={weight} onChange={setWeight} step="0.1" required />
-          <SelectField label="Unit" value={weightUnit} onChange={handleWeightUnitChange} options={[{ value: 'lbs', label: 'lbs' }, { value: 'kg', label: 'kg' }]} />
+          <SelectField label="Unit" value={weightUnit} onChange={(val) => setWeightUnit(val as 'lbs' | 'kg')} options={[{ value: 'lbs', label: 'lbs' }, { value: 'kg', label: 'kg' }]} />
         </div>
 
         <SelectField label="Activity Level" value={activityLevel} onChange={(val) => setActivityLevel(val as TDEESettings['activityLevel'])} options={ACTIVITY_LEVELS} />
@@ -197,17 +174,17 @@ export function TDEECalculator() {
             );
             return (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-theme-accent/10 rounded-lg p-4">
-                  <p className="text-sm text-theme-text-tertiary">BMR</p>
-                  <p className="text-2xl font-bold text-theme-accent">{Math.round(results.bmr)} <span className="text-sm font-normal">cal/day</span></p>
+                <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-xl p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-1">BMR</p>
+                  <p className="text-2xl font-bold text-theme-accent">{Math.round(results.bmr)} <span className="text-xs font-normal text-theme-text-tertiary uppercase">cal/day</span></p>
                 </div>
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                  <p className="text-sm text-theme-text-tertiary">TDEE</p>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">{Math.round(results.tdee)} <span className="text-sm font-normal">cal/day</span></p>
+                <div className="bg-success/10 border border-success/20 rounded-xl p-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-success mb-1">TDEE</p>
+                  <p className="text-2xl font-bold text-success">{Math.round(results.tdee)} <span className="text-xs font-normal text-success uppercase">cal/day</span></p>
                 </div>
-                <div className={`${phase.bgClass} rounded-lg p-4`}>
-                  <p className={`text-sm ${phase.colorClass}`}>{phase.label}</p>
-                  <p className={`text-2xl font-bold ${phase.colorClass}`}>{Math.round(results.cuttingCalories)} <span className="text-sm font-normal">cal/day</span></p>
+                <div className={`${phase.bgClass} border border-white/5 rounded-xl p-4`}>
+                  <p className={`text-[10px] font-black uppercase tracking-widest ${phase.colorClass} mb-1`}>{phase.label}</p>
+                  <p className={`text-2xl font-bold ${phase.colorClass}`}>{Math.round(results.cuttingCalories)} <span className="text-xs font-normal ${phase.colorClass} uppercase">cal/day</span></p>
                 </div>
               </div>
             );

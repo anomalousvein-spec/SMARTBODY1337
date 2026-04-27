@@ -76,12 +76,12 @@ export function AnalyticsDashboard() {
     const ratio = metrics.waistRatio;
 
     if (ratio < WAIST_RATIO_DISPLAY_CATEGORIES.SLIM.threshold)
-      return { label: WAIST_RATIO_DISPLAY_CATEGORIES.SLIM.label, color: 'text-blue-300' };
+      return { label: WAIST_RATIO_DISPLAY_CATEGORIES.SLIM.label, color: 'text-blue-400' };
     if (ratio < WAIST_RATIO_DISPLAY_CATEGORIES.HEALTHY.threshold)
-      return { label: WAIST_RATIO_DISPLAY_CATEGORIES.HEALTHY.label, color: 'text-green-300' };
+      return { label: WAIST_RATIO_DISPLAY_CATEGORIES.HEALTHY.label, color: 'text-success' };
     if (ratio < WAIST_RATIO_DISPLAY_CATEGORIES.OVERWEIGHT.threshold)
-      return { label: WAIST_RATIO_DISPLAY_CATEGORIES.OVERWEIGHT.label, color: 'text-yellow-300' };
-    return { label: WAIST_RATIO_DISPLAY_CATEGORIES.HIGH_RISK.label, color: 'text-red-300' };
+      return { label: WAIST_RATIO_DISPLAY_CATEGORIES.OVERWEIGHT.label, color: 'text-warning' };
+    return { label: WAIST_RATIO_DISPLAY_CATEGORIES.HIGH_RISK.label, color: 'text-error' };
   }, [metrics?.waistRatio]);
 
   const displayError = metricsError || saveError;
@@ -105,10 +105,10 @@ export function AnalyticsDashboard() {
   }
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="space-y-6">
       {displayError && (
-        <div className="bg-red-500/10 rounded-2xl p-4 border border-red-200 dark:border-red-800" role="alert">
-          <p className="text-sm text-red-700 dark:text-red-400">{displayError}</p>
+        <div className="bg-error/10 rounded-2xl p-4 border border-error/20" role="alert">
+          <p className="text-sm text-error">{displayError}</p>
         </div>
       )}
 
@@ -117,18 +117,19 @@ export function AnalyticsDashboard() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-4 text-white shadow-xl"
+          className="glass border-theme-accent/20 rounded-2xl p-5 shadow-xl relative overflow-hidden group"
         >
+          <div className="absolute top-0 right-0 w-16 h-16 bg-theme-accent/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-theme-accent/10 transition-colors" />
           <div className="flex items-center gap-2 mb-2">
-            <Scale className="w-5 h-5" aria-hidden="true" />
-            <span className="text-sm font-medium opacity-90">Current Weight</span>
+            <Scale className="w-4 h-4 text-theme-accent" aria-hidden="true" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">Current Weight</span>
           </div>
-          <div className="text-2xl font-bold">
+          <div className="text-3xl font-black text-theme-text-primary tracking-tight">
             {metrics?.latestWeight?.weight ?? '--'}
-            <span className="text-sm font-normal ml-1">lbs</span>
+            <span className="text-xs font-medium text-theme-text-tertiary ml-1.5 uppercase">lbs</span>
           </div>
           {metrics && metrics.weightChange !== 0 && (
-            <div className={`text-xs mt-1 flex items-center gap-1 ${metrics.weightChange < 0 ? 'text-green-300' : 'text-red-300'}`}>
+            <div className={`text-[10px] font-bold uppercase tracking-wide mt-2 flex items-center gap-1 ${metrics.weightChange < 0 ? 'text-success' : 'text-error'}`}>
               <TrendingDown aria-hidden="true" className={`w-3 h-3 ${metrics.weightChange >= 0 ? 'rotate-180' : ''}`} />
               {Math.abs(metrics.weightChange).toFixed(1)} lbs this week
             </div>
@@ -139,17 +140,18 @@ export function AnalyticsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-4 text-white shadow-xl"
+          className="glass border-purple-500/20 rounded-2xl p-5 shadow-xl relative overflow-hidden group"
         >
+          <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:bg-purple-500/10 transition-colors" />
           <div className="flex items-center gap-2 mb-2">
-            <Target className="w-5 h-5" aria-hidden="true" />
-            <span className="text-sm font-medium opacity-90">Waist Ratio</span>
+            <Target className="w-4 h-4 text-purple-400" aria-hidden="true" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">Waist Ratio</span>
           </div>
-          <div className="text-2xl font-bold">
+          <div className="text-3xl font-black text-theme-text-primary tracking-tight">
             {metrics?.waistRatio ? metrics.waistRatio.toFixed(2) : '--'}
           </div>
           {waistCategory && (
-            <div className={`text-xs mt-1 ${waistCategory.color}`}>
+            <div className={`text-[10px] font-bold uppercase tracking-wide mt-2 ${waistCategory.color}`}>
               {waistCategory.label}
             </div>
           )}
@@ -191,16 +193,18 @@ export function AnalyticsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-red-500/10 rounded-2xl p-4 border border-red-200 dark:border-red-800"
+          className="bg-error/5 rounded-2xl p-5 border border-error/10"
         >
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" aria-hidden="true" />
+            <div className="p-2 rounded-xl bg-error/10 shrink-0">
+              <AlertCircle className="w-5 h-5 text-error" aria-hidden="true" />
+            </div>
             <div>
-              <h4 className="font-semibold text-red-400 text-sm">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-error mb-1">
                 Health Alert
               </h4>
-              <p className="text-sm text-red-700 dark:text-red-400 mt-1">
-                Your waist-to-height ratio ({metrics.waistRatio.toFixed(2)}) indicates elevated health risks. 
+              <p className="text-sm text-theme-text-secondary leading-relaxed">
+                Your waist-to-height ratio (<span className="text-error font-bold">{metrics.waistRatio.toFixed(2)}</span>) indicates elevated health risks.
                 Consider consulting with a healthcare provider.
               </p>
             </div>
