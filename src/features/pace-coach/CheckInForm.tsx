@@ -3,6 +3,7 @@ import { db } from '../../db/database';
 import { TDEESettings, PaceCoachCheckIn } from '../../db/models';
 import { calculateTrendSlope, calculateBackCalculatedTDEE, calculateSuggestedIntake } from '../../utils/paceCoach';
 import { calculateMovingAverage, calculateBMR } from '../../utils/calculations';
+import { LBS_TO_KG, KG_TO_LBS } from '../../config/constants';
 import { FormMessage } from '../../components/Form';
 import { validateCalories } from '../../utils/validation';
 import { MIN_WEIGHT_ENTRIES_FOR_CHECKIN, TREND_CALCULATION_DAYS } from '../../config/constants';
@@ -46,15 +47,18 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
       const sortedEntries = results
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
-      const sortedWeights = sortedEntries.map(w => w.weight);
+      // Normalize all weights to lbs for trend calculation
+      const sortedWeightsLbs = sortedEntries.map(w => 
+        w.unit === 'kg' ? w.weight * KG_TO_LBS : w.weight
+      );
 
       // We need at least some data to calculate trend
-      if (sortedWeights.length < MIN_WEIGHT_ENTRIES_FOR_CHECKIN) {
+      if (sortedWeightsLbs.length < MIN_WEIGHT_ENTRIES_FOR_CHECKIN) {
         throw new Error(`Not enough weight data to calculate trend. Need at least ${MIN_WEIGHT_ENTRIES_FOR_CHECKIN} weigh-ins!`);
       }
 
       // 2. Use smoothed trend for slope
-      const smoothed = calculateMovingAverage(sortedWeights, 7);
+      const smoothed = calculateMovingAverage(sortedWeightsLbs, 7);
       const recentSmoothed = smoothed.slice(-TREND_CALCULATION_DAYS);
       const slope = calculateTrendSlope(recentSmoothed);
 
@@ -64,18 +68,19 @@ export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInF
       // 4. Get BMR for safety floor
       const lastEntry = sortedEntries[sortedEntries.length-1];
       // Convert weight to kg based on its actual unit, not height unit
-      const weightKg = lastEntry.unit === 'kg' ? lastEntry.weight : lastEntry.weight * 0.453592;
+      const weightKg = lastEntry.unit === 'kg' ? lastEntry.weight : lastEntry.weight * LBS_TO_KG;
       const heightCm = settings.heightUnit === 'in' ? settings.height * 2.54 : settings.height;
       const bmr = calculateBMR(weightKg, heightCm, settings.age, settings.gender);
 
-      // 5. Suggest target
+      // 5. Suggest target - normalize currentWeight to lbs for consistency
+      const currentWeightLbs = lastEntry.unit === 'kg' ? lastEntry.weight * KG_TO_LBS : lastEntry.weight;
       const suggestion = calculateSuggestedIntake({
         currentTDEE: calculatedTDEE,
         goalLbsPerWeek: settings.targetLossRate || 1,
         lastSuggestedIntake: settings.lastSuggestedIntake,
         bmr,
         gender: settings.gender,
-        currentWeight: settings.currentWeight || lastEntry.weight
+        currentWeight: settings.currentWeight || currentWeightLbs
       });
 
       // 6. Save check-in and update settings

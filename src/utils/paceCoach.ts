@@ -5,9 +5,10 @@
 /**
  * Calculates the slope of weight change using linear regression.
  * Returns the average weight change per day.
+ * IMPORTANT: Weights must be normalized to lbs before calling this function.
  *
- * @param weights Array of smoothed weight values
- * @returns lbs/day slope
+ * @param weights Array of smoothed weight values (must be in lbs)
+ * @returns lbs/day slope (negative = weight loss, positive = weight gain)
  */
 export function calculateTrendSlope(weights: number[]): number {
   if (weights.length < 2) return 0;
@@ -35,15 +36,21 @@ export function calculateTrendSlope(weights: number[]): number {
  * Calculates TDEE based on energy balance equation:
  * TDEE = average_intake + deficit
  * Deficit = daily_loss_rate * 3500
+ * 
+ * Note: When slope is negative (weight loss), subtracting a negative adds the deficit,
+ * correctly yielding TDEE > intake. When slope is positive (weight gain), the deficit
+ * is subtracted, correctly yielding TDEE < intake.
  *
  * @param averageIntake User reported average daily calorie intake
- * @param dailyLossRate Average weight change per day (negative for loss)
+ * @param dailyWeightChange Average weight change per day in lbs/day (negative for loss, positive for gain)
  * @returns Back-calculated TDEE
  */
-export function calculateBackCalculatedTDEE(averageIntake: number, dailyLossRate: number): number {
-  // 3500 calories per lb
-  const dailyDeficit = dailyLossRate * 3500;
-  return averageIntake - dailyDeficit;
+export function calculateBackCalculatedTDEE(averageIntake: number, dailyWeightChange: number): number {
+  // 3500 calories per lb of body weight
+  // If losing weight (negative slope): TDEE = intake + |deficit|
+  // If gaining weight (positive slope): TDEE = intake - surplus
+  const dailyEnergyBalance = dailyWeightChange * 3500;
+  return averageIntake - dailyEnergyBalance;
 }
 
 /**
