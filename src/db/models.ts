@@ -36,6 +36,8 @@ export interface TDEESettings {
   currentWeight?: number; // For macro recommendations
   tdee?: number; // Maintenance calories
   cuttingCalories?: number; // Deficit calories
+  bmr?: number;
+  weightUnit?: "lbs" | "kg";
   lastUpdated: string;
   // Advanced Mode fields
   calculationMode?: "standard" | "advanced";

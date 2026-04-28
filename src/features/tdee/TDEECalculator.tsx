@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, Skeleton } from "../../components";
 import {
   InputField,
@@ -16,14 +16,13 @@ import {
   getUserPhase,
 } from "../../utils/calculations";
 import {
-  ACTIVITY_LEVELS,
+  ACTIVITY_MULTIPLIERS,
   INCHES_TO_CM,
   LBS_TO_KG,
   KG_TO_LBS,
   MIN_AGE,
   MAX_AGE,
-  MIN_WEIGHT_LBS,
-  MAX_WEIGHT_LBS,
+
 } from "../../config/constants";
 import {
   validateAge,
@@ -32,7 +31,7 @@ import {
 } from "../../utils/validation";
 import { useTDEESettings } from "../../hooks/useTDEESettings";
 import { TDEESettings } from "../../db/models";
-import { PaceCoachSettings } from "./PaceCoachSettings";
+import { PaceCoachSettings } from "../pace-coach/PaceCoachSettings";
 import { AdvancedResultsView } from "./components/AdvancedResultsView";
 import { StandardResultsView } from "./components/StandardResultsView";
 import { useApp } from "../../context/AppContext";
@@ -406,7 +405,7 @@ export function TDEECalculator() {
           onChange={(val) =>
             setActivityLevel(val as TDEESettings["activityLevel"])
           }
-          options={ACTIVITY_LEVELS}
+          options={Object.keys(ACTIVITY_MULTIPLIERS).map(k => ({ value: k, label: k.replace(/_/g, " ") }))}
         />
 
         <div className="grid grid-cols-1 gap-4">
@@ -506,7 +505,7 @@ export function TDEECalculator() {
         {fullSettings && (
           <PaceCoachSettings
             settings={fullSettings}
-            onUpdate={(updated) => updateSettings(updated)}
+            onUpdate={(updated: Partial<TDEESettings>) => updateSettings(updated)}
           />
         )}
       </form>
