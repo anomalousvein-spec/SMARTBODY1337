@@ -1,35 +1,27 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { cn } from "../../utils/ui";
 import {
-  SLIDER_CONFIG,
-  SLIDER_ZONES,
   calculatePercentageLoss,
+  getSliderZone,
   getDynamicLabelText,
   getHeavyUserMessage,
-  getSliderZone,
+  SLIDER_CONFIG,
+  SLIDER_ZONES,
 } from "../../utils/percentageLoss";
 
 export interface PercentageLossSliderProps {
-  /** Current weight value */
   currentWeight: number;
-  /** Weight unit (lbs or kg) */
   weightUnit: "lbs" | "kg";
-  /** Current TDEE value */
   tdee: number;
-  /** Current BMR value */
   bmr: number;
-  /** User's gender for BMR floor calculation */
   gender: "male" | "female";
-  /** Current selected percentage value */
   value: number;
-  /** Callback when percentage changes */
-  onChange: (percentage: number) => void;
-  /** Whether the slider is disabled */
+  onChange: (value: number) => void;
   disabled?: boolean;
 }
 
 /**
- * Percentage-based weight loss rate slider with color-coded zones
+ * Enhanced weight loss rate slider with color-coded zones
  * and dynamic calorie calculations
  */
 export function PercentageLossSlider({
@@ -124,10 +116,10 @@ export function PercentageLossSlider({
           (SLIDER_CONFIG.max - SLIDER_CONFIG.min)) *
         100;
       // Map color names to approximate hex for gradient
-      let color = "#4D9EFF"; // blue
-      if (zone.color === "green") color = "#03DAC6";
-      if (zone.color === "yellow") color = "#EAB308";
-      if (zone.color === "orange") color = "#F97316";
+      let color = "#4D9EFF"; // theme-accent-like
+      if (zone.color === "green") color = "#03DAC6"; // success
+      if (zone.color === "yellow") color = "#F4B400"; // warning
+      if (zone.color === "orange") color = "#CF6679"; // error/aggressive
 
       return `${color} ${zoneStart}% ${zoneEnd}%`;
     });
@@ -258,8 +250,8 @@ export function PercentageLossSlider({
 
       {/* BMR Floor Warning - High priority if it exists */}
       {results.warningMessage ? (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-          <p className="text-xs text-red-400 font-medium leading-relaxed">
+        <div className="bg-error/10 border border-error/20 rounded-xl p-4">
+          <p className="text-xs text-error font-medium leading-relaxed">
             {results.warningMessage}
           </p>
         </div>
@@ -269,13 +261,13 @@ export function PercentageLossSlider({
           className={cn(
             "rounded-xl p-3 text-xs font-bold uppercase tracking-wide text-center border",
             results.zone === "conservative" &&
-              "bg-blue-500/5 text-blue-400 border-blue-500/10",
+              "bg-theme-accent/5 text-theme-accent border-theme-accent/10",
             results.zone === "recommended" &&
-              "bg-emerald-500/5 text-success border-emerald-500/10",
+              "bg-success/5 text-success border-success/10",
             results.zone === "aggressive" &&
-              "bg-yellow-500/5 text-warning border-yellow-500/10",
+              "bg-warning/5 text-warning border-warning/10",
             results.zone === "notRecommended" &&
-              "bg-orange-500/5 text-error border-orange-500/10",
+              "bg-error/5 text-error border-error/10",
           )}
         >
           {results.zone === "conservative" &&
@@ -309,8 +301,8 @@ export function PercentageLossSlider({
 
       {/* Heavy User Note */}
       {heavyUserMessage && (
-        <div className="bg-blue-500/5 border border-blue-500/10 rounded-xl p-3">
-          <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest text-center">
+        <div className="bg-theme-accent/5 border border-theme-accent/10 rounded-xl p-3">
+          <p className="text-[10px] text-theme-accent font-black uppercase tracking-widest text-center">
             {heavyUserMessage}
           </p>
         </div>
