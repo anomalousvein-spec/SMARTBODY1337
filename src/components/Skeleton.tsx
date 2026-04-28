@@ -1,23 +1,26 @@
-import React from 'react';
-import { cn } from '../utils/ui';
-import './Skeleton.css';
+import React from "react";
+import { cn } from "../utils/ui";
+import "./Skeleton.css";
 
 interface SkeletonProps {
   className?: string;
-  variant?: 'rectangular' | 'circular' | 'text';
+  variant?: "rectangular" | "circular" | "text";
 }
 
 /**
  * Reusable skeleton loader component with shimmer animation for perceived performance
  */
-export function Skeleton({ className, variant = 'rectangular' }: SkeletonProps) {
+export function Skeleton({
+  className,
+  variant = "rectangular",
+}: SkeletonProps) {
   return (
     <div
       className={cn(
         "skeleton-base",
-        variant === 'circular' ? "rounded-full" : "rounded-lg",
-        variant === 'text' ? "h-4 w-3/4 mb-2" : "",
-        className
+        variant === "circular" ? "rounded-full" : "rounded-lg",
+        variant === "text" ? "h-4 w-3/4 mb-2" : "",
+        className,
       )}
       aria-hidden="true"
     />

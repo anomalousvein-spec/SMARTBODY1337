@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
-import { db } from '../db/database';
-import { WeightEntry } from '../db/models';
+import { useState, useCallback, useEffect } from "react";
+import { db } from "../db/database";
+import { WeightEntry } from "../db/models";
 
 /**
  * Hook to fetch weight entries for a specific user.
@@ -15,17 +15,21 @@ export function useWeights(userId: string, startDate?: Date, endDate?: Date) {
   const loadWeights = useCallback(async () => {
     setIsLoading(true);
     try {
-      let query = db.weights.where('[user_id+date]');
+      let query = db.weights.where("[user_id+date]");
 
-      const startStr = startDate ? startDate.toISOString() : '0';
-      const endStr = endDate ? endDate.toISOString() : '9';
+      const startStr = startDate ? startDate.toISOString() : "0";
+      const endStr = endDate ? endDate.toISOString() : "9";
 
-      const results = await query.between([userId, startStr], [userId, endStr]).toArray();
+      const results = await query
+        .between([userId, startStr], [userId, endStr])
+        .toArray();
       // Sort by date to ensure chronological order (oldest first)
-      const sortedResults = results.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const sortedResults = results.sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
       setWeights(sortedResults);
     } catch (error) {
-      console.error('Error loading weights:', error);
+      console.error("Error loading weights:", error);
     } finally {
       setIsLoading(false);
     }
@@ -38,6 +42,6 @@ export function useWeights(userId: string, startDate?: Date, endDate?: Date) {
   return {
     weights,
     isLoading,
-    refresh: loadWeights
+    refresh: loadWeights,
   };
 }

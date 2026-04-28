@@ -3,7 +3,7 @@ export interface WeightEntry {
   user_id: string;
   date: string; // ISO string
   weight: number;
-  unit: 'lbs' | 'kg';
+  unit: "lbs" | "kg";
   notes?: string;
 }
 
@@ -12,19 +12,24 @@ export interface WaistEntry {
   user_id: string;
   date: string; // ISO string
   measurement: number;
-  unit: 'in' | 'cm';
+  unit: "in" | "cm";
   notes?: string;
 }
 
-export type ActivityLevel = 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extra_active';
+export type ActivityLevel =
+  | "sedentary"
+  | "lightly_active"
+  | "moderately_active"
+  | "very_active"
+  | "extra_active";
 
 export interface TDEESettings {
   id: string; // 'global'
   user_id: string;
   age: number;
-  gender: 'male' | 'female';
+  gender: "male" | "female";
   height: number;
-  heightUnit: 'in' | 'cm';
+  heightUnit: "in" | "cm";
   activityLevel: ActivityLevel;
   targetWeight?: number;
   targetLossRate?: number; // % body weight per week (0.25-1.5)
@@ -33,11 +38,11 @@ export interface TDEESettings {
   cuttingCalories?: number; // Deficit calories
   lastUpdated: string;
   // Advanced Mode fields
-  calculationMode?: 'standard' | 'advanced';
+  calculationMode?: "standard" | "advanced";
   waist?: number;
   neck?: number;
   hip?: number;
-  measurementUnit?: 'in' | 'cm';
+  measurementUnit?: "in" | "cm";
   // Pace Coach settings
   paceCoachEnabled?: boolean;
   paceCoachReminderDays?: number;
@@ -77,7 +82,7 @@ export interface WeeklyMetrics {
   target_calories: number;
   weight_logs_count: number;
   adjustment_eligible: boolean;
-  hold_reason?: 'NON_COMPLIANT_HOLD' | 'INSUFFICIENT_DATA_HOLD' | null;
+  hold_reason?: "NON_COMPLIANT_HOLD" | "INSUFFICIENT_DATA_HOLD" | null;
   created_at: string; // ISO string
 }
 

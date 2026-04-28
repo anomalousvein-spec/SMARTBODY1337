@@ -1,13 +1,16 @@
-import React from 'react';
-import { TDEESettings } from '../../db/models';
-import { db } from '../../db/database';
+import React from "react";
+import { TDEESettings } from "../../db/models";
+import { db } from "../../db/database";
 
 interface PaceCoachSettingsProps {
   settings: TDEESettings;
   onUpdate: (updatedSettings: TDEESettings) => void;
 }
 
-export function PaceCoachSettings({ settings, onUpdate }: PaceCoachSettingsProps) {
+export function PaceCoachSettings({
+  settings,
+  onUpdate,
+}: PaceCoachSettingsProps) {
   const handleToggle = async (enabled: boolean) => {
     const updated = { ...settings, paceCoachEnabled: enabled };
     await db.tdee_settings.put(updated);
@@ -24,8 +27,12 @@ export function PaceCoachSettings({ settings, onUpdate }: PaceCoachSettingsProps
     <div className="space-y-4 pt-4 border-t border-white/5">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-md font-semibold text-theme-text-primary">Pace Coach</h3>
-          <p className="text-xs text-theme-text-tertiary">Let your weight trend guide your calorie target</p>
+          <h3 className="text-md font-semibold text-theme-text-primary">
+            Pace Coach
+          </h3>
+          <p className="text-xs text-theme-text-tertiary">
+            Let your weight trend guide your calorie target
+          </p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -41,7 +48,10 @@ export function PaceCoachSettings({ settings, onUpdate }: PaceCoachSettingsProps
 
       {settings.paceCoachEnabled && (
         <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-          <label htmlFor="checkin-frequency" className="block text-sm font-medium text-theme-text-secondary mb-1">
+          <label
+            htmlFor="checkin-frequency"
+            className="block text-sm font-medium text-theme-text-secondary mb-1"
+          >
             Check-in Frequency
           </label>
           <select
@@ -55,7 +65,9 @@ export function PaceCoachSettings({ settings, onUpdate }: PaceCoachSettingsProps
             <option value={14}>Every 14 days</option>
           </select>
           <p className="mt-2 text-[10px] text-theme-text-tertiary italic">
-            "We'll ask you once every {settings.paceCoachReminderDays || 10} days to note your average daily calorie intake. No logging required."
+            "We'll ask you once every {settings.paceCoachReminderDays || 10}{" "}
+            days to note your average daily calorie intake. No logging
+            required."
           </p>
         </div>
       )}

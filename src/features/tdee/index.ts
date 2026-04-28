@@ -1,1 +1,1 @@
-export { TDEECalculator } from './TDEECalculator';
+export { TDEECalculator } from "./TDEECalculator";

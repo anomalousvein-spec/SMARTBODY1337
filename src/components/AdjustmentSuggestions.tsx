@@ -1,5 +1,5 @@
-import React from 'react';
-import { TrendingDown, TrendingUp, Minus, Lightbulb } from 'lucide-react';
+import React from "react";
+import { TrendingDown, TrendingUp, Minus, Lightbulb } from "lucide-react";
 
 interface AdjustmentSuggestionProps {
   currentCalories: number;
@@ -17,7 +17,9 @@ export function AdjustmentSuggestions({
   reason,
 }: AdjustmentSuggestionProps) {
   const calorieDifference = suggestedCalories - currentCalories;
-  const proteinDifference = suggestedProtein ? suggestedProtein - (currentProtein || 0) : null;
+  const proteinDifference = suggestedProtein
+    ? suggestedProtein - (currentProtein || 0)
+    : null;
 
   return (
     <div className="bg-gradient-to-br from-theme-accent/10 to-indigo-500/10 rounded-2xl p-6 border border-theme-accent/20">
@@ -45,11 +47,17 @@ export function AdjustmentSuggestions({
               ) : (
                 <Minus className="w-4 h-4 text-theme-text-tertiary" />
               )}
-              <span className={`text-sm font-semibold ${
-                calorieDifference > 0 ? 'text-green-600' : 
-                calorieDifference < 0 ? 'text-red-600' : 'text-theme-text-secondary'
-              }`}>
-                {calorieDifference > 0 ? '+' : ''}{calorieDifference} cal
+              <span
+                className={`text-sm font-semibold ${
+                  calorieDifference > 0
+                    ? "text-green-600"
+                    : calorieDifference < 0
+                      ? "text-red-600"
+                      : "text-theme-text-secondary"
+                }`}
+              >
+                {calorieDifference > 0 ? "+" : ""}
+                {calorieDifference} cal
               </span>
             </div>
           </div>
@@ -79,11 +87,17 @@ export function AdjustmentSuggestions({
                 ) : (
                   <Minus className="w-4 h-4 text-theme-text-tertiary" />
                 )}
-                <span className={`text-sm font-semibold ${
-                  proteinDifference > 0 ? 'text-green-600' : 
-                  proteinDifference < 0 ? 'text-red-600' : 'text-theme-text-secondary'
-                }`}>
-                  {proteinDifference > 0 ? '+' : ''}{proteinDifference}g
+                <span
+                  className={`text-sm font-semibold ${
+                    proteinDifference > 0
+                      ? "text-green-600"
+                      : proteinDifference < 0
+                        ? "text-red-600"
+                        : "text-theme-text-secondary"
+                  }`}
+                >
+                  {proteinDifference > 0 ? "+" : ""}
+                  {proteinDifference}g
                 </span>
               </div>
             </div>
@@ -102,8 +116,8 @@ export function AdjustmentSuggestions({
 
       <div className="mt-4 p-3 bg-theme-accent/10 rounded-lg">
         <p className="text-xs text-theme-text-primary">
-          💡 <strong>Tip:</strong> Make gradual changes over 1-2 weeks to allow your body to adjust. 
-          Track your progress and adjust further if needed.
+          💡 <strong>Tip:</strong> Make gradual changes over 1-2 weeks to allow
+          your body to adjust. Track your progress and adjust further if needed.
         </p>
       </div>
     </div>
