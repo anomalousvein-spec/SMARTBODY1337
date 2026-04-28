@@ -7,6 +7,7 @@ import {
 
 /**
  * Calculates BMR using the Mifflin-St Jeor Equation
+ * Enforces a safety floor to prevent impossible values
  */
 export function calculateBMR(
   weightKg: number,
@@ -14,8 +15,14 @@ export function calculateBMR(
   age: number,
   gender: "male" | "female",
 ): number {
+  // Defensive checks for invalid inputs
+  if (weightKg <= 0 || heightCm <= 0 || age <= 0) return 1200;
+
   const genderOffset = gender === "male" ? 5 : -161;
-  return 10 * weightKg + 6.25 * heightCm - 5 * age + genderOffset;
+  const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + genderOffset;
+
+  // Safety floor: 1200 for females, 1500 for males (typical base metabolic needs)
+  return Math.max(bmr, gender === "male" ? 1500 : 1200);
 }
 
 /**
@@ -47,58 +54,61 @@ export function calculateAdvancedBMR(
   hipCm: number | undefined,
   gender: "male" | "female",
 ): AdvancedBMRResult {
+  // Defensive checks to prevent division by zero or NaN
+  const safeWaist = Math.max(waistCm, 1);
+  const safeHeight = Math.max(heightCm, 1);
+  const safeNeck = Math.max(neckCm, 1);
+  const safeWeight = Math.max(weightKg, 1);
+
   // Step A: Calculate RFM Body Fat
   const rfmBodyFat =
     gender === "male"
-      ? 64 - 20 * (heightCm / waistCm)
-      : 76 - 20 * (heightCm / waistCm);
+      ? 64 - 20 * (safeHeight / safeWaist)
+      : 76 - 20 * (safeHeight / safeWaist);
 
   // Step B: Calculate Navy Body Fat
   let navyBodyFat: number;
+  const navyDenominator = Math.max(safeWaist - safeNeck, 0.1);
+
   if (gender === "male") {
     navyBodyFat =
       495 /
         (1.0324 -
-          0.19077 * Math.log10(waistCm - neckCm) +
-          0.15456 * Math.log10(heightCm)) -
+          0.19077 * Math.log10(navyDenominator) +
+          0.15456 * Math.log10(safeHeight)) -
       450;
   } else {
     // Female requires hip measurement
-    if (hipCm === undefined || hipCm <= 0) {
-      // Fallback to male formula if hip not provided (shouldn't happen in UI)
-      navyBodyFat =
-        495 /
-          (1.0324 -
-            0.19077 * Math.log10(waistCm - neckCm) +
-            0.15456 * Math.log10(heightCm)) -
-        450;
-    } else {
-      navyBodyFat =
-        495 /
-          (1.29579 -
-            0.35004 * Math.log10(waistCm + hipCm - neckCm) +
-            0.221 * Math.log10(heightCm)) -
-        450;
-    }
+    const safeHip = Math.max(hipCm || 0, 1);
+    const femaleNavyDenominator = Math.max(safeWaist + safeHip - safeNeck, 0.1);
+
+    navyBodyFat =
+      495 /
+        (1.29579 -
+          0.35004 * Math.log10(femaleNavyDenominator) +
+          0.221 * Math.log10(safeHeight)) -
+      450;
   }
 
   // Step C: Average Body Fat
-  const avgBodyFat = (rfmBodyFat + navyBodyFat) / 2;
-
-  // Cap body fat at realistic minimums to prevent unsafe BMR calculations
-  const cappedAvgBodyFat = Math.max(avgBodyFat, gender === "male" ? 3 : 8);
+  // Cap body fat at realistic ranges (3% to 60%)
+  const rawAvgBodyFat = (rfmBodyFat + navyBodyFat) / 2;
+  const cappedAvgBodyFat = Math.min(Math.max(rawAvgBodyFat, gender === "male" ? 3 : 8), 60);
 
   // Step 3: Calculate LBM and BMR using Katch-McArdle
-  const leanBodyMass = weightKg * (1 - cappedAvgBodyFat / 100);
+  const leanBodyMass = safeWeight * (1 - cappedAvgBodyFat / 100);
   const bmr = 370 + 21.6 * leanBodyMass;
 
   // Calculate Waist-to-Height Ratio
-  const waistToHeightRatio = waistCm / heightCm;
+  const waistToHeightRatio = safeWaist / safeHeight;
+
+  // Final BMR safety floor
+  const finalBmr = Math.max(bmr, gender === "male" ? 1500 : 1200);
 
   return {
-    bmr,
-    rfmBodyFat,
-    navyBodyFat,
+    bmr: finalBmr,
+    rfmBodyFat: Math.max(rfmBodyFat, 0),
+    navyBodyFat: Math.max(navyBodyFat, 0),
     avgBodyFat: cappedAvgBodyFat,
     leanBodyMass,
     waistToHeightRatio,
@@ -116,14 +126,13 @@ export function calculateAdvancedMacros(
   targetCalories: number,
 ): AdvancedMacroTargets {
   // Protein: 2.0g to 2.5g per kg of LBM
-  const proteinMin = leanBodyMassKg * 2.0;
-  const proteinMax = leanBodyMassKg * 2.5;
+  const proteinMin = Math.max(leanBodyMassKg * 2.0, 0);
+  const proteinMax = Math.max(leanBodyMassKg * 2.5, 0);
 
   // Fat Floor: 0.3g per lb of goal weight
-  // If goal weight not provided, estimate a healthy weight based on LBM and 15% body fat
   const effectiveGoalWeight =
     goalWeightLbs || (leanBodyMassKg * KG_TO_LBS) / (1 - 0.15);
-  const fatMin = effectiveGoalWeight * 0.3;
+  const fatMin = Math.max(effectiveGoalWeight * 0.3, 0);
 
   // Calculate remaining calories after protein and fat floors
   const proteinCalories = proteinMin * 4; // 4 cal per gram
@@ -146,7 +155,8 @@ export function calculateTDEE(
   bmr: number,
   activityLevel: keyof typeof ACTIVITY_MULTIPLIERS,
 ): number {
-  return bmr * ACTIVITY_MULTIPLIERS[activityLevel];
+  const multiplier = ACTIVITY_MULTIPLIERS[activityLevel] || 1.2;
+  return Math.max(bmr * multiplier, bmr);
 }
 
 /**
@@ -156,13 +166,12 @@ export function calculateWaistToHeightRatio(
   waist: number,
   height: number,
 ): number {
-  if (height === 0) return 0;
+  if (height <= 0) return 0;
   return waist / height;
 }
 
 /**
  * Calculates a simple moving average using an optimized approach.
- * Complexity: O(n) instead of O(n*w)
  */
 export function calculateMovingAverage(
   data: number[],
@@ -242,7 +251,6 @@ export function normalizeMeasurement(value: number, unit: "in" | "cm"): number {
 
 /**
  * Dynamic Phase Labeling system
- * Determines user's current phase based on TDEE settings
  */
 export interface PhaseInfo {
   type: "cutting" | "maintenance" | "surplus";
@@ -256,7 +264,6 @@ export function getUserPhase(
   targetWeight: number | undefined,
   targetLossRate: number | undefined,
 ): PhaseInfo {
-  // Default to cutting if no data available
   if (
     currentWeight === undefined ||
     targetWeight === undefined ||
@@ -270,7 +277,6 @@ export function getUserPhase(
     };
   }
 
-  // Maintenance: targetLossRate === 0 OR weights are within 0.5 lbs
   const isWeightDiffNegligible = Math.abs(currentWeight - targetWeight) < 0.5;
   if (targetLossRate === 0 || isWeightDiffNegligible) {
     return {
@@ -281,7 +287,6 @@ export function getUserPhase(
     };
   }
 
-  // Surplus: negative loss rate (means gain) OR target > current
   if (targetLossRate < 0 || targetWeight > currentWeight) {
     return {
       type: "surplus",
@@ -291,7 +296,6 @@ export function getUserPhase(
     };
   }
 
-  // Cutting: targetWeight < currentWeight AND targetLossRate > 0
   return {
     type: "cutting",
     label: "Deficit Target",

@@ -3,7 +3,7 @@ import { db } from "../db/database";
 import { WeightEntry } from "../db/models";
 
 /**
- * Hook to fetch weight entries for a specific user.
+ * Hook to fetch weights for a specific user with date range support.
  * @param userId - The ID of the user to fetch weights for.
  * @param startDate - Optional start date for filtering.
  * @param endDate - Optional end date for filtering.
@@ -12,7 +12,7 @@ export function useWeights(userId: string, startDate?: Date, endDate?: Date) {
   const [weights, setWeights] = useState<WeightEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadWeights = useCallback(async () => {
+  const loadWeights = useCallback(async (isMounted: boolean) => {
     setIsLoading(true);
     try {
       let query = db.weights.where("[user_id+date]");
@@ -23,6 +23,9 @@ export function useWeights(userId: string, startDate?: Date, endDate?: Date) {
       const results = await query
         .between([userId, startStr], [userId, endStr])
         .toArray();
+
+      if (!isMounted) return;
+
       // Sort by date to ensure chronological order (oldest first)
       const sortedResults = results.sort(
         (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
@@ -31,17 +34,23 @@ export function useWeights(userId: string, startDate?: Date, endDate?: Date) {
     } catch (error) {
       console.error("Error loading weights:", error);
     } finally {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     }
   }, [userId, startDate, endDate]);
 
   useEffect(() => {
-    loadWeights();
+    let isMounted = true;
+    loadWeights(isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [loadWeights]);
 
   return {
     weights,
     isLoading,
-    refresh: loadWeights,
+    refresh: () => loadWeights(true),
   };
 }

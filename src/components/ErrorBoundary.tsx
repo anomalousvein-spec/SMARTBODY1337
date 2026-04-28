@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { db } from "../db/database";
 
 interface Props {
   children: ReactNode;
@@ -33,6 +34,30 @@ export class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
+  private handleHardReset = async () => {
+    const confirmed = window.confirm(
+      "This will PERMANENTLY delete all your data to fix potential corruption. Continue?",
+    );
+    if (!confirmed) return;
+
+    try {
+      await Promise.all([
+        db.weights.clear(),
+        db.waist_measurements.clear(),
+        db.macro_logs.clear(),
+        db.tdee_settings.clear(),
+        db.pace_coach_checkins.clear(),
+        db.weekly_metrics.clear(),
+        db.user_profiles.clear(),
+      ]);
+      localStorage.clear();
+      window.location.href = "/";
+    } catch (err) {
+      console.error("Failed to hard reset:", err);
+      alert("Hard reset failed. Please clear your browser cache manually.");
+    }
+  };
+
   public render() {
     const { hasError, error } = this.state;
     const { children, fallback } = this.props;
@@ -63,15 +88,23 @@ export class ErrorBoundary extends Component<Props, State> {
             <h2 className="text-lg font-bold text-theme-text-primary">
               Something went wrong
             </h2>
-            <p className="mt-2 text-sm text-theme-text-tertiary">
+            <p className="mt-2 text-sm text-theme-text-tertiary max-w-xs mx-auto">
               {error?.message || "An unexpected error occurred"}
             </p>
-            <button
-              onClick={this.handleRetry}
-              className="mt-4 px-6 py-2 bg-theme-accent hover:opacity-90 text-white font-semibold rounded-lg transition-colors"
-            >
-              Try Again
-            </button>
+            <div className="flex flex-col gap-2 mt-6">
+              <button
+                onClick={this.handleRetry}
+                className="px-6 py-2 bg-theme-accent hover:opacity-90 text-white font-semibold rounded-lg transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={this.handleHardReset}
+                className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-400 transition-colors"
+              >
+                Hard Reset (Delete Data)
+              </button>
+            </div>
           </div>
         </div>
       );

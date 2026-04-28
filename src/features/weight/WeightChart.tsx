@@ -1,14 +1,4 @@
-import React, { useMemo, useEffect, useState } from "react";
-import { db } from "../../db/database";
-import { WeightEntry } from "../../db/models";
-import { calculateMovingAverage } from "../../utils/calculations";
-import { MOVING_AVERAGE_DAYS } from "../../config/constants";
-import { formatDisplayDate } from "../../utils/dates";
-import { useWeights } from "../../hooks/useWeights";
-import { useApp } from "../../context/AppContext";
-import { Edit2, Trash2, TrendingUp } from "lucide-react";
-import { Line } from "react-chartjs-2";
-import { Card, Skeleton } from "../../components";
+import React, { useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -20,9 +10,16 @@ import {
   Legend,
   Filler,
   ChartOptions,
-  ScriptableContext,
-  TooltipItem,
 } from "chart.js";
+import { Line } from "react-chartjs-2";
+import { Trash2, Edit2, TrendingUp } from "lucide-react";
+import { useWeights } from "../../hooks/useWeights";
+import { WeightEntry } from "../../db/models";
+import { db } from "../../db/database";
+import { Card, Skeleton } from "../../components";
+import { formatDisplayDate } from "../../utils/dates";
+import { calculateMovingAverage } from "../../utils/calculations";
+import { useApp } from "../../context/AppContext";
 
 ChartJS.register(
   CategoryScale,
@@ -36,111 +33,70 @@ ChartJS.register(
 );
 
 interface WeightChartProps {
-  startDate?: Date;
-  endDate?: Date;
   onEdit?: (entry: WeightEntry) => void;
-  onDelete?: (id: number) => void;
 }
 
-export function WeightChart({
-  startDate,
-  endDate,
-  onEdit,
-  onDelete,
-}: WeightChartProps) {
+export const WeightChart = React.memo(function WeightChart({ onEdit }: WeightChartProps) {
   const { user, theme } = useApp();
   const userId = user.id;
-  const { weights, isLoading, refresh } = useWeights(
-    userId,
-    startDate,
-    endDate,
-  );
-  const [chartColors, setChartColors] = useState({
-    accent: "#4D9EFF",
-    text: "#71717a",
-    grid: "rgba(255, 255, 255, 0.05)",
-  });
+  const { weights, isLoading, refresh } = useWeights(userId);
 
-  useEffect(() => {
-    const style = getComputedStyle(document.documentElement);
-    setChartColors({
-      accent: style.getPropertyValue("--accent").trim() || "#4D9EFF",
-      text: style.getPropertyValue("--text-secondary").trim() || "#71717a",
-      grid:
-        theme === "amoled"
-          ? "rgba(255, 255, 255, 0.1)"
-          : "rgba(255, 255, 255, 0.05)",
-    });
-  }, [theme]);
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this weight entry?"))
-      return;
-    try {
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this weight entry?")) {
       await db.weights.delete(id);
       refresh();
-      onDelete?.(id);
-    } catch (error) {
-      console.error("Error deleting weight:", error);
     }
   };
 
-  // Create gradient for chart
-  const createGradient = (ctx: CanvasRenderingContext2D, color: string) => {
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(
-      0,
-      color.includes("rgb")
-        ? color.replace(")", ", 0.3)").replace("rgb", "rgba")
-        : `${color}4D`,
-    );
-    gradient.addColorStop(
-      1,
-      color.includes("rgb")
-        ? color.replace(")", ", 0.0)").replace("rgb", "rgba")
-        : `${color}00`,
-    );
-    return gradient;
-  };
+  const chartColors = useMemo(() => {
+    const isDark = true;
+    return {
+      accent: getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent")
+        .trim(),
+      text: isDark ? "#b3b3b3" : "#666666",
+      grid: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+    };
+  }, [theme]);
 
   const chartData = useMemo(() => {
-    if (weights.length === 0) return { labels: [], datasets: [] };
+    const sortedWeights = [...weights].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
 
-    const weightValues = weights.map((w: WeightEntry) => w.weight);
+    const labels = sortedWeights.map((w) =>
+      formatDisplayDate(new Date(w.date), { month: "short", day: "numeric" }),
+    );
+    const dataPoints = sortedWeights.map((w) => w.weight);
+
+    // Calculate 7-day moving average
+    const movingAvg = calculateMovingAverage(dataPoints, 7);
+
     return {
-      labels: weights.map((w: WeightEntry) =>
-        formatDisplayDate(new Date(w.date)),
-      ),
+      labels,
       datasets: [
         {
           label: "Weight",
-          data: weightValues,
+          data: dataPoints,
           borderColor: chartColors.accent,
-          backgroundColor: (ctx: ScriptableContext<"line">) => {
-            const chartCtx = ctx.chart.ctx;
-            const gradient = createGradient(chartCtx, chartColors.accent);
-            return gradient;
-          },
-          fill: true,
-          tension: 0.4,
-          pointRadius: 5,
+          backgroundColor: `${chartColors.accent}20`,
+          borderWidth: 3,
+          pointRadius: 4,
           pointBackgroundColor: chartColors.accent,
           pointBorderColor: "#fff",
           pointBorderWidth: 2,
-          pointHoverRadius: 7,
-          pointHoverBackgroundColor: chartColors.accent,
-          pointHoverBorderColor: "#fff",
-          pointHoverBorderWidth: 3,
+          tension: 0.4,
+          fill: true,
         },
         {
-          label: "Average",
-          data: calculateMovingAverage(weightValues, MOVING_AVERAGE_DAYS),
-          borderColor: "#10b981",
-          backgroundColor: "transparent",
-          borderDash: [6, 4],
+          label: "7-Day Avg",
+          data: movingAvg,
+          borderColor: "rgba(255, 255, 255, 0.3)",
           borderWidth: 2,
-          tension: 0.4,
+          borderDash: [5, 5],
           pointRadius: 0,
+          tension: 0.4,
+          fill: false,
         },
       ],
     };
@@ -150,33 +106,18 @@ export function WeightChart({
     return {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: {
-        mode: "nearest" as const,
-        axis: "x" as const,
-        intersect: false,
-      },
       plugins: {
         legend: {
           display: false,
         },
         tooltip: {
-          mode: "index" as const,
+          mode: "index",
           intersect: false,
-          backgroundColor:
-            theme === "amoled" ? "#121212" : "rgba(30, 30, 30, 0.95)",
-          titleColor: "#fff",
-          bodyColor: "#fff",
-          padding: 14,
-          cornerRadius: 14,
-          displayColors: false,
-          borderWidth: 1,
-          borderColor: "rgba(255, 255, 255, 0.1)",
-          titleFont: { size: 13 },
+          backgroundColor: "rgba(0, 0, 0, 0.8)",
+          titleFont: { size: 12, weight: "bold" },
           bodyFont: { size: 12 },
-          callbacks: {
-            label: (context: TooltipItem<"line">) =>
-              `${context.dataset.label}: ${(context.parsed.y ?? 0).toFixed(1)} lbs`,
-          },
+          padding: 12,
+          cornerRadius: 8,
         },
       },
       scales: {
@@ -186,7 +127,10 @@ export function WeightChart({
           },
           ticks: {
             color: chartColors.text,
-            font: { size: 11 },
+            font: { size: 10 },
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 6,
           },
         },
         y: {
@@ -279,4 +223,4 @@ export function WeightChart({
       </div>
     </Card>
   );
-}
+});

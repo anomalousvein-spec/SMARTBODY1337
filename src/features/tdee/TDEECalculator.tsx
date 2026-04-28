@@ -1,48 +1,43 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
+import { Card, Skeleton } from "../../components";
 import {
   InputField,
   SelectField,
   FormMessage,
   SubmitButton,
-  PercentageLossSlider,
 } from "../../components/Form";
-import { Card, Skeleton } from "../../components";
-import { useTDEESettings } from "../../hooks/useTDEESettings";
-import { TDEESettings } from "../../db/models";
-import {
-  MIN_AGE,
-  MAX_AGE,
-  LBS_TO_KG,
-  INCHES_TO_CM,
-  KG_TO_LBS,
-  CM_TO_IN,
-} from "../../config/constants";
 import {
   calculateBMR,
   calculateTDEE,
-  getUserPhase,
   calculateAdvancedBMR,
   calculateAdvancedMacros,
   AdvancedBMRResult,
   AdvancedMacroTargets,
+  getUserPhase,
 } from "../../utils/calculations";
-import { validateWeight } from "../../utils/validation";
-import { useApp } from "../../context/AppContext";
-import { PaceCoachSettings } from "../pace-coach/PaceCoachSettings";
-import { StandardResultsView } from "./components/StandardResultsView";
-import { AdvancedResultsView } from "./components/AdvancedResultsView";
 import {
-  SLIDER_CONFIG,
-  calculatePercentageLoss,
-} from "../../utils/percentageLoss";
-
-const ACTIVITY_LEVELS = [
-  { value: "sedentary", label: "Sedentary (Little/No Exercise)" },
-  { value: "lightly_active", label: "Lightly Active (1-3 days/week)" },
-  { value: "moderately_active", label: "Moderately Active (3-5 days/week)" },
-  { value: "very_active", label: "Very Active (6-7 days/week)" },
-  { value: "extra_active", label: "Extra Active (Professional Athlete)" },
-];
+  ACTIVITY_LEVELS,
+  INCHES_TO_CM,
+  LBS_TO_KG,
+  KG_TO_LBS,
+  MIN_AGE,
+  MAX_AGE,
+  MIN_WEIGHT_LBS,
+  MAX_WEIGHT_LBS,
+} from "../../config/constants";
+import {
+  validateAge,
+  validateWeight,
+  validateHeight,
+} from "../../utils/validation";
+import { useTDEESettings } from "../../hooks/useTDEESettings";
+import { TDEESettings } from "../../db/models";
+import { PaceCoachSettings } from "./PaceCoachSettings";
+import { AdvancedResultsView } from "./components/AdvancedResultsView";
+import { StandardResultsView } from "./components/StandardResultsView";
+import { useApp } from "../../context/AppContext";
+import { calculatePercentageLoss } from "../../utils/percentageLoss";
+import { PercentageLossSlider } from "../../components/Form/PercentageLossSlider";
 
 export function TDEECalculator() {
   const { user } = useApp();
@@ -53,28 +48,24 @@ export function TDEECalculator() {
     updateSettings,
   } = useTDEESettings(userId);
 
-  const [age, setAge] = useState("");
+  const [age, setAge] = useState<string>("");
   const [gender, setGender] = useState<"male" | "female">("male");
-  const [height, setHeight] = useState("");
+  const [height, setHeight] = useState<string>("");
   const [heightUnit, setHeightUnit] = useState<"in" | "cm">("in");
-  const [weight, setWeight] = useState("");
+  const [weight, setWeight] = useState<string>("");
   const [weightUnit, setWeightUnit] = useState<"lbs" | "kg">("lbs");
   const [activityLevel, setActivityLevel] =
     useState<TDEESettings["activityLevel"]>("moderately_active");
-  const [targetWeight, setTargetWeight] = useState("");
-  const [targetLossRate, setTargetLossRate] = useState(
-    SLIDER_CONFIG.default.toString(),
-  );
+  const [targetWeight, setTargetWeight] = useState<string>("");
+  const [targetLossRate, setTargetLossRate] = useState<string>("0.5");
 
+  // Advanced Mode State
   const [useAdvancedMode, setUseAdvancedMode] = useState(false);
-  const [waist, setWaist] = useState("");
-  const [neck, setNeck] = useState("");
-  const [hip, setHip] = useState("");
+  const [waist, setWaist] = useState<string>("");
+  const [neck, setNeck] = useState<string>("");
+  const [hip, setHip] = useState<string>("");
   const [measurementUnit, setMeasurementUnit] = useState<"in" | "cm">("in");
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [results, setResults] = useState<{
     bmr: number;
     tdee: number;
@@ -85,191 +76,104 @@ export function TDEECalculator() {
   const [macroTargets, setMacroTargets] = useState<AdvancedMacroTargets | null>(
     null,
   );
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  // Compute BMR and TDEE in real-time for the slider preview
-  const liveWeightValue = weight ? parseFloat(weight) : 0;
-  const liveWeightKg =
-    weightUnit === "lbs" ? liveWeightValue * LBS_TO_KG : liveWeightValue;
-  const liveHeightValue = height ? parseFloat(height) : 0;
-  const liveHeightCm =
-    heightUnit === "in" ? liveHeightValue * INCHES_TO_CM : liveHeightValue;
+  // Live calculation for the slider safety checks
+  const weightValue = parseFloat(weight) || 0;
+  const heightValue = parseFloat(height) || 0;
+  const ageValue = parseInt(age) || 30;
 
-  let liveBmr = results?.bmr || (gender === "male" ? 1500 : 1200);
-  let liveTdee = results?.tdee || 2000;
-
-  if (liveWeightValue > 0 && liveHeightValue > 0 && age) {
-    const ageValue = parseInt(age);
-    if (useAdvancedMode && waist && neck) {
-      const waistCm =
-        measurementUnit === "in"
-          ? parseFloat(waist) * INCHES_TO_CM
-          : parseFloat(waist);
-      const neckCm =
-        measurementUnit === "in"
-          ? parseFloat(neck) * INCHES_TO_CM
-          : parseFloat(neck);
-      const hipCm =
-        gender === "female" && hip
-          ? measurementUnit === "in"
-            ? parseFloat(hip) * INCHES_TO_CM
-            : parseFloat(hip)
-          : undefined;
-      const advBmr = calculateAdvancedBMR(
-        liveWeightKg,
-        liveHeightCm,
-        waistCm,
-        neckCm,
-        hipCm,
-        gender,
-      );
-      liveBmr = advBmr.bmr;
-    } else {
-      liveBmr = calculateBMR(liveWeightKg, liveHeightCm, ageValue, gender);
-    }
-    liveTdee = calculateTDEE(liveBmr, activityLevel);
-  }
+  const liveBmr = calculateBMR(
+    weightUnit === "lbs" ? weightValue * LBS_TO_KG : weightValue,
+    heightUnit === "in" ? heightValue * INCHES_TO_CM : heightValue,
+    ageValue,
+    gender,
+  );
+  const liveTdee = calculateTDEE(liveBmr, activityLevel);
 
   useEffect(() => {
     if (fullSettings) {
       setAge(fullSettings.age.toString());
       setGender(fullSettings.gender);
       setHeight(fullSettings.height.toString());
-      setHeightUnit(fullSettings.heightUnit);
+      setHeightUnit(fullSettings.heightUnit || "in");
       setWeight(fullSettings.currentWeight?.toString() || "");
-      setWeightUnit(fullSettings.heightUnit === "in" ? "lbs" : "kg");
+      setWeightUnit(fullSettings.weightUnit || "lbs");
       setActivityLevel(fullSettings.activityLevel);
       setTargetWeight(fullSettings.targetWeight?.toString() || "");
-      const savedPercentage =
-        fullSettings.targetLossRate ?? SLIDER_CONFIG.default;
-      setTargetLossRate(savedPercentage.toString());
-
-      const mode = fullSettings.calculationMode || "standard";
-      setUseAdvancedMode(mode === "advanced");
+      setTargetLossRate(fullSettings.targetLossRate?.toString() || "0.5");
+      setUseAdvancedMode(fullSettings.calculationMode === "advanced");
       setWaist(fullSettings.waist?.toString() || "");
       setNeck(fullSettings.neck?.toString() || "");
       setHip(fullSettings.hip?.toString() || "");
       setMeasurementUnit(fullSettings.measurementUnit || "in");
 
-      if (fullSettings.tdee && fullSettings.cuttingCalories) {
-        const wKg =
-          (fullSettings.currentWeight || 0) *
-          (fullSettings.heightUnit === "in" ? LBS_TO_KG : 1);
-        const hCm =
-          fullSettings.height *
-          (fullSettings.heightUnit === "in" ? INCHES_TO_CM : 1);
-
-        let bmrValue = 0;
-        let adv: AdvancedBMRResult | null = null;
-        let macros: AdvancedMacroTargets | null = null;
-
-        if (mode === "advanced" && fullSettings.waist && fullSettings.neck) {
-          const wCm =
-            fullSettings.measurementUnit === "in"
-              ? fullSettings.waist * INCHES_TO_CM
-              : fullSettings.waist;
-          const nCm =
-            fullSettings.measurementUnit === "in"
-              ? fullSettings.neck * INCHES_TO_CM
-              : fullSettings.neck;
-          const hiCm = fullSettings.hip
-            ? fullSettings.measurementUnit === "in"
-              ? fullSettings.hip * INCHES_TO_CM
-              : fullSettings.hip
-            : undefined;
-
-          adv = calculateAdvancedBMR(
-            wKg,
-            hCm,
-            wCm,
-            nCm,
-            hiCm,
-            fullSettings.gender,
-          );
-          setAdvancedResults(adv);
-          bmrValue = adv.bmr;
-
-          const goalWeightLbs = fullSettings.targetWeight
-            ? fullSettings.heightUnit === "cm"
-              ? fullSettings.targetWeight * KG_TO_LBS
-              : fullSettings.targetWeight
-            : undefined;
-          macros = calculateAdvancedMacros(
-            adv.leanBodyMass,
-            goalWeightLbs,
-            adv.bmr,
-            fullSettings.tdee,
-            fullSettings.cuttingCalories,
-          );
-          setMacroTargets(macros);
-        } else {
-          bmrValue = calculateBMR(
-            wKg,
-            hCm,
-            fullSettings.age,
-            fullSettings.gender,
-          );
-        }
-
-        setResults({
-          bmr: bmrValue,
-          tdee: fullSettings.tdee,
-          cuttingCalories: fullSettings.cuttingCalories,
-        });
-      }
+      setResults({
+        bmr: fullSettings.bmr || 0,
+        tdee: fullSettings.tdee || 0,
+        cuttingCalories: fullSettings.cuttingCalories || 0,
+      });
     }
   }, [fullSettings]);
 
-  const handleHeightUnitChange = (unit: string) => {
-    const val = parseFloat(height);
-    if (!isNaN(val)) {
-      setHeight(
-        unit === "cm"
-          ? (val * INCHES_TO_CM).toFixed(1)
-          : (val * CM_TO_IN).toFixed(1),
-      );
+  const handleHeightUnitChange = (val: string) => {
+    const newUnit = val as "in" | "cm";
+    if (newUnit === heightUnit) return;
+
+    const currentHeight = parseFloat(height);
+    if (!isNaN(currentHeight)) {
+      const converted =
+        newUnit === "cm"
+          ? (currentHeight * INCHES_TO_CM).toFixed(1)
+          : (currentHeight / INCHES_TO_CM).toFixed(1);
+      setHeight(converted);
     }
-    setHeightUnit(unit as "in" | "cm");
+    setHeightUnit(newUnit);
   };
 
-  const handleWeightUnitChange = (unit: string) => {
-    const val = parseFloat(weight);
-    if (!isNaN(val)) {
-      setWeight(
-        unit === "kg"
-          ? (val * LBS_TO_KG).toFixed(1)
-          : (val * KG_TO_LBS).toFixed(1),
-      );
+  const handleWeightUnitChange = (val: string) => {
+    const newUnit = val as "lbs" | "kg";
+    if (newUnit === weightUnit) return;
+
+    const currentWeight = parseFloat(weight);
+    if (!isNaN(currentWeight)) {
+      const converted =
+        newUnit === "kg"
+          ? (currentWeight * LBS_TO_KG).toFixed(1)
+          : (currentWeight / LBS_TO_KG).toFixed(1);
+      setWeight(converted);
     }
-    setWeightUnit(unit as "lbs" | "kg");
+
+    const currentTarget = parseFloat(targetWeight);
+    if (!isNaN(currentTarget)) {
+      const converted =
+        newUnit === "kg"
+          ? (currentTarget * LBS_TO_KG).toFixed(1)
+          : (currentTarget / LBS_TO_KG).toFixed(1);
+      setTargetWeight(converted);
+    }
+
+    setWeightUnit(newUnit);
   };
 
-  const handleMeasurementUnitChange = (unit: string) => {
-    const waistVal = parseFloat(waist);
-    const neckVal = parseFloat(neck);
-    const hipVal = parseFloat(hip);
+  const handleMeasurementUnitChange = (val: string) => {
+    const newUnit = val as "in" | "cm";
+    if (newUnit === measurementUnit) return;
 
-    if (!isNaN(waistVal)) {
-      setWaist(
-        unit === "cm"
-          ? (waistVal * INCHES_TO_CM).toFixed(1)
-          : (waistVal * CM_TO_IN).toFixed(1),
-      );
-    }
-    if (!isNaN(neckVal)) {
-      setNeck(
-        unit === "cm"
-          ? (neckVal * INCHES_TO_CM).toFixed(1)
-          : (neckVal * CM_TO_IN).toFixed(1),
-      );
-    }
-    if (!isNaN(hipVal)) {
-      setHip(
-        unit === "cm"
-          ? (hipVal * INCHES_TO_CM).toFixed(1)
-          : (hipVal * CM_TO_IN).toFixed(1),
-      );
-    }
-    setMeasurementUnit(unit as "in" | "cm");
+    const convert = (v: string) => {
+      const num = parseFloat(v);
+      if (isNaN(num)) return "";
+      return newUnit === "cm"
+        ? (num * INCHES_TO_CM).toFixed(1)
+        : (num / INCHES_TO_CM).toFixed(1);
+    };
+
+    setWaist(convert(waist));
+    setNeck(convert(neck));
+    setHip(convert(hip));
+    setMeasurementUnit(newUnit);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -277,45 +181,36 @@ export function TDEECalculator() {
     setError(null);
     setSuccess(false);
 
-    const weightVal = validateWeight(weight);
-    if (!weightVal.valid) {
-      setError(weightVal.error!);
+    // Strict Validation
+    const ageVal = validateAge(age);
+    if (!ageVal.valid) {
+      setError(ageVal.error!);
       return;
     }
 
-    if (useAdvancedMode) {
-      if (!waist || parseFloat(waist) <= 0) {
-        setError("Please enter a valid waist measurement.");
-        return;
-      }
-      if (!neck || parseFloat(neck) <= 0) {
-        setError("Please enter a valid neck measurement.");
-        return;
-      }
-      if (gender === "female" && (!hip || parseFloat(hip) <= 0)) {
-        setError(
-          "Please enter a valid hip measurement (required for females).",
-        );
-        return;
-      }
+    const weightValRes = validateWeight(weightUnit === "kg" ? (parseFloat(weight) * KG_TO_LBS).toString() : weight);
+    if (!weightValRes.valid) {
+      setError(weightValRes.error!);
+      return;
+    }
+
+    const heightValRes = validateHeight(height, heightUnit);
+    if (!heightValRes.valid) {
+      setError(heightValRes.error!);
+      return;
     }
 
     setIsSaving(true);
+
     try {
       const weightValue = parseFloat(weight);
       const heightValue = parseFloat(height);
       const ageValue = parseInt(age);
-      const targetWeightValue = targetWeight
-        ? parseFloat(targetWeight)
-        : undefined;
-      const targetLossRateValue = targetLossRate
-        ? parseFloat(targetLossRate)
-        : SLIDER_CONFIG.default;
+      const targetWeightValue = parseFloat(targetWeight) || undefined;
+      const targetLossRateValue = parseFloat(targetLossRate);
 
-      const weightKg =
-        weightUnit === "lbs" ? weightValue * LBS_TO_KG : weightValue;
-      const heightCm =
-        heightUnit === "in" ? heightValue * INCHES_TO_CM : heightValue;
+      const weightKg = weightUnit === "lbs" ? weightValue * LBS_TO_KG : weightValue;
+      const heightCm = heightUnit === "in" ? heightValue * INCHES_TO_CM : heightValue;
 
       let bmr: number;
       let advResults: AdvancedBMRResult | null = null;
@@ -323,12 +218,10 @@ export function TDEECalculator() {
       if (useAdvancedMode) {
         const waistValue = parseFloat(waist);
         const neckValue = parseFloat(neck);
-        const hipValue = hip ? parseFloat(hip) : undefined;
+        const hipValue = parseFloat(hip);
 
-        const waistCm =
-          measurementUnit === "in" ? waistValue * INCHES_TO_CM : waistValue;
-        const neckCm =
-          measurementUnit === "in" ? neckValue * INCHES_TO_CM : neckValue;
+        const waistCm = measurementUnit === "in" ? waistValue * INCHES_TO_CM : waistValue;
+        const neckCm = measurementUnit === "in" ? neckValue * INCHES_TO_CM : neckValue;
         const hipCm =
           hipValue !== undefined && hipValue > 0
             ? measurementUnit === "in"
@@ -351,7 +244,6 @@ export function TDEECalculator() {
 
       const tdee = calculateTDEE(bmr, activityLevel);
 
-      // Use the utility for calorie math consistency
       const lossResults = calculatePercentageLoss(
         weightValue,
         weightUnit,
@@ -427,7 +319,6 @@ export function TDEECalculator() {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        {/* Mode Toggle at Top */}
         <div className="flex p-1 bg-theme-bg-tertiary/50 rounded-xl mb-6">
           <button
             type="button"
@@ -454,6 +345,7 @@ export function TDEECalculator() {
             min={MIN_AGE}
             max={MAX_AGE}
             required
+            error={error && error.includes("Age") ? error : undefined}
           />
           <SelectField
             label="Gender"
@@ -474,6 +366,7 @@ export function TDEECalculator() {
             onChange={setHeight}
             step="0.1"
             required
+            error={error && error.includes("Height") ? error : undefined}
           />
           <SelectField
             label="Unit"
@@ -494,6 +387,7 @@ export function TDEECalculator() {
             onChange={setWeight}
             step="0.1"
             required
+            error={error && error.includes("Weight") ? error : undefined}
           />
           <SelectField
             label="Unit"
@@ -526,7 +420,6 @@ export function TDEECalculator() {
           />
         </div>
 
-        {/* Percentage-based Loss Rate Slider - replaces flat lbs/week selector */}
         {weight && !isNaN(parseFloat(weight)) ? (
           <PercentageLossSlider
             currentWeight={parseFloat(weight)}
@@ -545,7 +438,6 @@ export function TDEECalculator() {
           </div>
         )}
 
-        {/* Advanced Mode Fields - Hidden if Standard */}
         {useAdvancedMode && (
           <div className="mt-4 pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between">
