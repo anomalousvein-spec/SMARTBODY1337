@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { db } from "../../db/database";
 import { TDEESettings, PaceCoachCheckIn } from "../../db/models";
 import {
@@ -7,17 +7,13 @@ import {
   calculateSuggestedIntake,
   calculateAverageIntakeFromLogs,
 } from "../../utils/paceCoach";
-import { calculateMovingAverage, calculateBMR } from "../../utils/calculations";
+import { calculateBMR } from "../../utils/calculations";
 import {
   LBS_TO_KG,
-  KG_TO_LBS,
   INCHES_TO_CM,
   MIN_WEIGHT_ENTRIES_FOR_CHECKIN,
   TREND_CALCULATION_DAYS
 } from "../../config/constants";
-import { FormMessage } from "../../components/Form";
-import { validateCalories } from "../../utils/validation";
-import { useTDEESettings } from "../../hooks/useTDEESettings";
 import { Info } from "lucide-react";
 
 interface CheckInFormProps {

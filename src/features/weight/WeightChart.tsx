@@ -41,7 +41,7 @@ export const WeightChart = React.memo(function WeightChart({ onEdit }: WeightCha
   const userId = user.id;
   const { weights, isLoading, refresh } = useWeights(userId);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm("Are you sure you want to delete this weight entry?")) {
       await db.weights.delete(id);
       refresh();
@@ -65,7 +65,7 @@ export const WeightChart = React.memo(function WeightChart({ onEdit }: WeightCha
     );
 
     const labels = sortedWeights.map((w) =>
-      formatDisplayDate(new Date(w.date), { month: "short", day: "numeric" }),
+      formatDisplayDate(new Date(w.date)),
     );
     const dataPoints = sortedWeights.map((w) => w.weight);
 

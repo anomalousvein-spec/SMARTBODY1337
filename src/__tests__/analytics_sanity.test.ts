@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { calculateAdvancedMacros } from '../utils/calculations';
 import { calculateSuggestedIntake } from '../utils/pace-coach/math';
 import { calculateTrendRateWithTier } from '../utils/pace-coach/trends';
@@ -84,11 +84,11 @@ describe('Analytics Sanity & Logic Optimization', () => {
       ]; // Avg = 197
 
       // Setup mocks
-      (db.weights.toArray as any)
+      (db.weights.toArray as Mock)
         .mockResolvedValueOnce(mockCurrentWeights)
         .mockResolvedValueOnce(mockPriorWeights);
 
-      (db.weekly_metrics.toArray as any).mockResolvedValue([]); // No compliant weeks = Tier 1
+      (db.weekly_metrics.toArray as Mock).mockResolvedValue([]); // No compliant weeks = Tier 1
 
       const result = await calculateTrendRateWithTier(userId, currentIsoWeek);
 
@@ -103,11 +103,11 @@ describe('Analytics Sanity & Logic Optimization', () => {
       const mockPriorWeights = [{ weight: 200, date: '2024-03-04T08:00:00Z' }];
       const mockCurrentWeights = [{ weight: 198, date: '2024-03-11T08:00:00Z' }];
 
-      (db.weights.toArray as any)
+      (db.weights.toArray as Mock)
         .mockResolvedValueOnce(mockCurrentWeights)
         .mockResolvedValueOnce(mockPriorWeights);
 
-      (db.weekly_metrics.toArray as any).mockResolvedValue([]);
+      (db.weekly_metrics.toArray as Mock).mockResolvedValue([]);
 
       const result = await calculateTrendRateWithTier(userId, currentIsoWeek);
 
