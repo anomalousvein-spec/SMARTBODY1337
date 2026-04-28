@@ -1,16 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
 import { 
   SmartTrigger,
-  CheckInResult,
-  NotificationPayload,
   evaluateSmartTriggers,
   shouldSendNotificationForTrigger,
   formatTriggerAsNotification,
   processEnhancedCheckIn
 } from './paceCoach';
 import { db } from '../db/database';
-import { WeeklyMetrics, UserProfile, TDEESettings, WeightEntry } from '../db/models';
+import { WeeklyMetrics, UserProfile, WeightEntry } from '../db/models';
 
 /**
  * Phase 3: Smart Triggers & Enhanced Check-in Tests

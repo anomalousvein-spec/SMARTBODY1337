@@ -3,7 +3,8 @@
 > vite
 
 
-  VITE v7.3.2  ready in 471 ms
+  VITE v7.3.2  ready in 492 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: http://192.168.0.2:5173/
+1:35:34 AM [vite] (client) hmr update /src/analytics/components/CalorieOverview.tsx, /src/features/pace-coach/CheckInForm.tsx, /src/features/weight/WeightChart.tsx, /src/features/weight/WeightAnalytics.tsx

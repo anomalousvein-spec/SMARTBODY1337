@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Info, RefreshCw, TrendingUp, TrendingDown, Minus, Target, CheckCircle, ArrowRight, Calendar, Clock } from 'lucide-react';
+import { Sparkles, Info, RefreshCw, TrendingUp, TrendingDown, Minus, Target, CheckCircle, ArrowRight, Calendar } from 'lucide-react';
 import { Skeleton, Card } from '../../components';
 import { CheckInForm } from './CheckInForm';
 import { usePaceCoach } from '../../hooks/usePaceCoach';

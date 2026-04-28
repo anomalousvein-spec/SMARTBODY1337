@@ -20,6 +20,8 @@ import {
   Legend,
   Filler,
   ChartOptions,
+  ScriptableContext,
+  TooltipItem,
 } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
@@ -79,7 +81,7 @@ export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
           label: 'Waist (in)',
           data: waistValues,
           borderColor: chartColors.accent,
-          backgroundColor: (ctx: any) => {
+          backgroundColor: (ctx: ScriptableContext<"line">) => {
             const chartCtx = ctx.chart.ctx;
             const gradient = createGradient(chartCtx, chartColors.accent);
             return gradient;
@@ -133,10 +135,10 @@ export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
           displayColors: false,
           borderWidth: 1,
           borderColor: 'rgba(255, 255, 255, 0.1)',
-          titleFont: { size: 13 } as any,
+          titleFont: { size: 13 },
           bodyFont: { size: 12 },
           callbacks: {
-            label: (context: any) => `${context.dataset.label}: ${context.parsed.y.toFixed(1)} in`
+            label: (context: TooltipItem<"line">) => `${context.dataset.label}: ${context.parsed.y.toFixed(1)} in`
           }
         }
       },
@@ -147,7 +149,7 @@ export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
           },
           ticks: {
             color: chartColors.text,
-            font: { size: 11 } as any
+            font: { size: 11 }
           }
         },
         y: {
@@ -157,7 +159,7 @@ export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
           },
           ticks: {
             color: chartColors.text,
-            font: { size: 11 } as any,
+            font: { size: 11 },
             padding: 8
           }
         }

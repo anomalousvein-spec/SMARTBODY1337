@@ -49,7 +49,7 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
           );
         })}
         
-        {navItems.map((item, index) => {
+        {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
 

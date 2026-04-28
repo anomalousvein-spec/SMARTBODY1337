@@ -104,7 +104,7 @@ describe('Pace Coach Utils', () => {
     it('should throttle large adjustments', () => {
       // Last suggestion 2000, new calculation suggests 1500 (diff of 500)
       // Should only adjust by max 150
-      const suggestion = calculateSuggestedIntake({
+      calculateSuggestedIntake({
         currentTDEE: 2000,
         goalLbsPerWeek: 1,
         lastSuggestedIntake: 2000

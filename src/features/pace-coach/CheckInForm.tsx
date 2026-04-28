@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { db } from '../../db/database';
-import { TDEESettings, PaceCoachCheckIn, MacroEntry } from '../../db/models';
+import { TDEESettings, PaceCoachCheckIn } from '../../db/models';
 import { calculateTrendSlope, calculateBackCalculatedTDEE, calculateSuggestedIntake, calculateAverageIntakeFromLogs } from '../../utils/paceCoach';
 import { calculateMovingAverage, calculateBMR } from '../../utils/calculations';
 import { LBS_TO_KG, KG_TO_LBS } from '../../config/constants';

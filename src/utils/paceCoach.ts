@@ -323,7 +323,7 @@ export async function processWeeklyMetricsForUsers(
   targetCaloriesMap: Map<string, number>
 ): Promise<WeeklyMetrics[]> {
   const { db } = await import('../db/database');
-  const { getISOWeek } = await import('./paceCoach');
+
   
   // Get prior week's ISO week identifier
   const today = new Date();
@@ -464,7 +464,7 @@ export function determineAdjustment(params: {
   currentTarget: number;
   adjustmentStep?: number;
 }): { adjustmentKcal: number; reason: 'TOO_SLOW' | 'ON_TRACK' | 'TOO_FAST' } {
-  const { trendRateLbsPerWeek, goalRateLbsPerWeek, currentTarget, adjustmentStep = 75 } = params;
+  const { trendRateLbsPerWeek, goalRateLbsPerWeek, adjustmentStep = 75 } = params;
   
   // Define tolerance band (±0.3 lbs/week)
   const tolerance = 0.3;
@@ -531,7 +531,7 @@ export async function calculateEnhancedCheckInSuggestion(params: {
   canAdjust: boolean;
   holdReason?: string;
 }> {
-  const { userId, currentIsoWeek, averageIntake, goalRateLbsPerWeek, currentTarget, currentTDEE, bmr, gender, currentWeight } = params;
+  const { userId, currentIsoWeek, goalRateLbsPerWeek, currentTarget, currentTDEE, bmr, gender, currentWeight } = params;
   const { db } = await import('../db/database');
   
   // Step 1: Calculate trend rate with tier
@@ -641,7 +641,7 @@ export interface SmartTrigger {
   type: 'COMPLIANCE_LOW' | 'COMPLIANCE_SLIPPING' | 'MILESTONE' | 'DATA_GAP';
   priority: 'HIGH' | 'MEDIUM' | 'LOW';
   message: string;
-  meta: any;
+  meta: Record<string, unknown>;
 }
 
 /**
@@ -671,7 +671,7 @@ export interface NotificationPayload {
  */
 export async function evaluateSmartTriggers(userId: string): Promise<SmartTrigger[]> {
   const { db } = await import('../db/database');
-  const { getISOWeek } = await import('./paceCoach');
+
   
   const triggers: SmartTrigger[] = [];
   const today = new Date();

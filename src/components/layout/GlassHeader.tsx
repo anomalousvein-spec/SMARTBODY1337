@@ -1,5 +1,5 @@
 import React from 'react';
-import { Palette, Sparkles } from 'lucide-react';
+import { Palette } from 'lucide-react';
 import { cn } from '../../utils/ui';
 
 interface GlassHeaderProps {
