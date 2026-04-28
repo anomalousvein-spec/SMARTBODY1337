@@ -4,8 +4,8 @@
   "description": "Comprehensive body tracking and analytics PWA",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#121212",
+  "background_color": "#0f0f11",
+  "theme_color": "#0f0f11",
   "orientation": "portrait",
   "icons": [
     {
@@ -40,6 +40,16 @@
     {
       "name": "Weight Log",
       "url": "/weight",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Waist Log",
+      "url": "/waist",
+      "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Macro Log",
+      "url": "/macros",
       "icons": [{ "src": "pwa-192x192.png", "sizes": "192x192" }]
     }
   ]

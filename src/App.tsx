@@ -75,11 +75,21 @@ const SettingsPanel = lazy(() =>
 );
 
 const LoadingFallback = () => (
-  <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-    <div className="h-12 w-12 animate-spin rounded-full border-4 border-theme-accent/20 border-t-theme-accent"></div>
-    <p className="animate-pulse text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">
-      Loading SmartBody...
-    </p>
+  <div className="flex min-h-[70vh] items-center justify-center p-4">
+    <div className="glass rounded-3xl p-10 shadow-2xl flex flex-col items-center gap-6 max-w-[280px] w-full border-white/10">
+      <div className="relative">
+        <div className="h-16 w-16 animate-spin rounded-full border-4 border-theme-accent/10 border-t-theme-accent"></div>
+        <div className="absolute inset-0 h-16 w-16 animate-pulse rounded-full border-4 border-theme-accent/5"></div>
+      </div>
+      <div className="text-center space-y-2">
+        <p className="font-black uppercase tracking-[0.2em] text-theme-text-primary text-sm">
+          SmartBody<span className="text-theme-accent">1337</span>
+        </p>
+        <p className="animate-pulse text-[10px] font-bold uppercase tracking-widest text-theme-text-tertiary">
+          Optimizing Engine...
+        </p>
+      </div>
+    </div>
   </div>
 );
 
