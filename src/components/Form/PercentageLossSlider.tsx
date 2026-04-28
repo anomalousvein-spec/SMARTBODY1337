@@ -151,16 +151,16 @@ export function PercentageLossSlider({
 
       {/* Slider & Percentage Display */}
       <div className="space-y-4">
-        <div className="relative pt-2">
+        <div className="relative pt-4 pb-2">
           {/* Custom Track with Color Zones */}
-          <div className="absolute top-[0.6rem] left-0 right-0 h-1.5 rounded-full overflow-hidden opacity-40">
+          <div className="absolute top-[1rem] left-0 right-0 h-2.5 rounded-full overflow-hidden opacity-40">
             <div
               className="w-full h-full"
               style={{ background: getTrackGradient() }}
             />
           </div>
 
-          {/* Range Input */}
+          {/* Range Input - Hide default thumb */}
           <input
             type="range"
             min={SLIDER_CONFIG.min}
@@ -172,15 +172,25 @@ export function PercentageLossSlider({
             onTouchEnd={handleSliderMouseUp}
             disabled={disabled}
             className={cn(
-              "relative w-full h-1.5 appearance-none bg-transparent cursor-pointer z-10",
+              "relative w-full h-2.5 appearance-none bg-transparent cursor-pointer z-10",
               "focus:outline-none focus:ring-0",
-              disabled && "opacity-50 cursor-not-allowed"
+              disabled && "opacity-50 cursor-not-allowed",
+              // Hide default thumb across browsers
+              "[&::-webkit-slider-thumb]:appearance-none",
+              "[&::-webkit-slider-thumb]:w-0",
+              "[&::-webkit-slider-thumb]:h-0",
+              "[&::-moz-range-thumb]:appearance-none",
+              "[&::-moz-range-thumb]:w-0",
+              "[&::-moz-range-thumb]:h-0",
+              "[&::-ms-thumb]:appearance-none",
+              "[&::-ms-thumb]:w-0",
+              "[&::-ms-thumb]:h-0"
             )}
           />
 
-          {/* Custom Thumb */}
+          {/* Custom Thumb - Larger and more prominent (single handle) */}
           <div
-            className="absolute top-[0.4rem] w-3.5 h-3.5 bg-white rounded-full shadow-lg border-2 border-theme-accent transform -translate-x-1/2 pointer-events-none transition-all duration-75 z-20"
+            className="absolute top-[0.6rem] w-6 h-6 bg-white rounded-full shadow-2xl border-2 border-theme-accent transform -translate-x-1/2 pointer-events-none transition-all duration-75 z-20 hover:scale-110 active:scale-105"
             style={{ left: `${thumbPosition}%` }}
           />
         </div>
