@@ -73,6 +73,14 @@ export function WaistLogger({ onWaistLogged }: WaistLoggerProps) {
     [userId, measurement, date, unit, notes, onWaistLogged],
   );
 
+  const handleClear = () => {
+    setMeasurement("");
+    setNotes("");
+    setDate(formatDateForInput(new Date()));
+    setError(null);
+    setSuccess(false);
+  };
+
   return (
     <Card className="card-hover">
       <h2 className="text-xl font-bold text-theme-text-primary mb-4">
@@ -126,7 +134,18 @@ export function WaistLogger({ onWaistLogged }: WaistLoggerProps) {
           <FormMessage type="success" message="Waist measurement logged!" />
         )}
 
-        <SubmitButton isSubmitting={isSaving} idleText="Log Waist" />
+        <div className="flex gap-2">
+          <SubmitButton isSubmitting={isSaving} idleText="Log Waist" />
+          {(measurement || notes || error || success) && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="px-4 py-2 rounded-xl bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary transition-all duration-200 font-bold uppercase text-[10px] tracking-widest active:scale-95"
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </form>
     </Card>
   );

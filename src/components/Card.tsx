@@ -19,7 +19,7 @@ export function Card({
   variant = "default",
 }: CardProps) {
   const variantStyles = {
-    default: "border-white/8 shadow-lg",
+    default: "border-white/10 shadow-lg",
     elevated: "border-white/10 shadow-xl bg-theme-bg-secondary/60",
     interactive:
       "border-white/10 shadow-lg cursor-pointer active:scale-[0.98] transition-transform duration-200 hover:shadow-xl hover:border-white/15",

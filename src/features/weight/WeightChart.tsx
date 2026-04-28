@@ -236,17 +236,17 @@ export function WeightChart({
         <Line data={chartData} options={options} />
       </div>
       <div className="mt-6 space-y-2">
-        <h3 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary px-1">
           Recent Entries
         </h3>
-        <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar">
+        <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar pr-1">
           {weights
             .slice(-10)
             .reverse()
             .map((entry: WeightEntry) => (
               <div
                 key={entry.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-theme-bg-tertiary/50 hover:bg-theme-bg-tertiary/70 transition-all duration-200 group"
+                className="flex items-center justify-between p-3 rounded-xl bg-theme-bg-tertiary/40 border border-white/5 hover:bg-theme-bg-tertiary/60 transition-all duration-200 group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-theme-accent opacity-60 group-hover:opacity-100 transition-opacity" />
@@ -261,12 +261,14 @@ export function WeightChart({
                   <button
                     onClick={() => onEdit?.(entry)}
                     className="p-2 rounded-lg hover:bg-blue-500/10 text-theme-text-tertiary hover:text-blue-400 transition-all active:scale-90"
+                    aria-label="Edit entry"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(entry.id!)}
                     className="p-2 rounded-lg hover:bg-error/10 text-theme-text-tertiary hover:text-error transition-all active:scale-90"
+                    aria-label="Delete weight entry"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
