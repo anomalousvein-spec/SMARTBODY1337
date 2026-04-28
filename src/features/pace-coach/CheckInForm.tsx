@@ -8,13 +8,15 @@ import {
   calculateAverageIntakeFromLogs,
 } from "../../utils/paceCoach";
 import { calculateMovingAverage, calculateBMR } from "../../utils/calculations";
-import { LBS_TO_KG, KG_TO_LBS } from "../../config/constants";
+import {
+  LBS_TO_KG,
+  KG_TO_LBS,
+  INCHES_TO_CM,
+  MIN_WEIGHT_ENTRIES_FOR_CHECKIN,
+  TREND_CALCULATION_DAYS
+} from "../../config/constants";
 import { FormMessage } from "../../components/Form";
 import { validateCalories } from "../../utils/validation";
-import {
-  MIN_WEIGHT_ENTRIES_FOR_CHECKIN,
-  TREND_CALCULATION_DAYS,
-} from "../../config/constants";
 import { useTDEESettings } from "../../hooks/useTDEESettings";
 import { Info } from "lucide-react";
 
@@ -22,266 +24,202 @@ interface CheckInFormProps {
   userId: string;
   settings: TDEESettings;
   lastCheckInDate?: string;
-  onComplete: (suggestion: number) => void;
+  onComplete: () => void;
   onCancel: () => void;
 }
 
-export function CheckInForm({
-  userId,
-  settings,
-  lastCheckInDate,
-  onComplete,
-  onCancel,
-}: CheckInFormProps) {
-  const { updateSettings } = useTDEESettings(userId);
+export function CheckInForm({ userId, settings, onComplete, onCancel }: CheckInFormProps) {
+  const [weight, setWeight] = useState("");
   const [averageIntake, setAverageIntake] = useState("");
-  const [suggestedIntake, setSuggestedIntake] = useState<number | null>(null);
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSufficientData, setHasSufficientData] = useState(false);
   const [daysLogged, setDaysLogged] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoadingSuggestion, setIsLoadingSuggestion] = useState(true);
 
-  // Load macro logs and calculate suggested average intake
   useEffect(() => {
-    const loadSuggestedIntake = async () => {
-      setIsLoadingSuggestion(true);
-      try {
-        // Determine the date range (since last check-in or last 14 days)
-        const startDate = lastCheckInDate
-          ? new Date(lastCheckInDate)
-          : new Date();
-        if (lastCheckInDate) {
-          startDate.setDate(startDate.getDate() + 1); // Start from day after last check-in
-        } else {
-          startDate.setDate(startDate.getDate() - 14); // Default to 14 days ago
-        }
+    async function checkData() {
+      const logs = await db.macro_logs
+        .where("user_id")
+        .equals(userId)
+        .toArray();
+      const analysis = calculateAverageIntakeFromLogs(logs, TREND_CALCULATION_DAYS);
 
-        const macroLogs = await db.macro_logs
-          .where("user_id")
-          .equals(userId)
-          .filter((log) => new Date(log.date) >= startDate)
-          .toArray();
+      setHasSufficientData(analysis.hasSufficientData);
+      setDaysLogged(analysis.daysLogged);
 
-        const result = calculateAverageIntakeFromLogs(macroLogs, 14);
-
-        if (result.hasSufficientData) {
-          setSuggestedIntake(result.averageCalories);
-          setHasSufficientData(true);
-          setDaysLogged(result.daysLogged);
-          // Pre-fill the input with suggested value
-          setAverageIntake(result.averageCalories.toString());
-        }
-      } catch (err) {
-        console.error("Error loading macro logs:", err);
-      } finally {
-        setIsLoadingSuggestion(false);
+      if (analysis.hasSufficientData) {
+        setAverageIntake(analysis.averageCalories.toString());
       }
-    };
+    }
+    checkData();
+  }, [userId]);
 
-    loadSuggestedIntake();
-  }, [userId, lastCheckInDate]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!weight || !averageIntake) return;
 
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setIsSubmitting(true);
-      setError(null);
+    setIsSubmitting(true);
+    try {
+      const currentWeight = parseFloat(weight);
+      const intake = parseInt(averageIntake);
 
-      const validation = validateCalories(averageIntake);
-      if (!validation.valid) {
-        setError(validation.error || "Invalid intake");
-        setIsSubmitting(false);
-        return;
+      if (isNaN(currentWeight) || isNaN(intake)) {
+        throw new Error("Invalid input values");
       }
 
-      try {
-        const intake = parseFloat(averageIntake);
+      // 1. Log the weight
+      await db.weights.add({
+        user_id: userId,
+        date: new Date().toISOString(),
+        weight: currentWeight,
+        unit: "lbs",
+        notes: notes || undefined
+      });
 
-        // 1. Get recent weights
-        const results = await db.weights
-          .where("user_id")
-          .equals(userId)
-          .toArray();
+      // 2. Fetch recent weights for trend
+      const recentWeights = await db.weights
+        .where("user_id")
+        .equals(userId)
+        .toArray();
 
-        // Sort entries chronologically and keep full objects for unit info
-        const sortedEntries = results.sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        );
+      const weightValues = recentWeights
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .slice(-MIN_WEIGHT_ENTRIES_FOR_CHECKIN)
+        .map(w => w.weight);
 
-        // Normalize all weights to lbs for trend calculation
-        const sortedWeightsLbs = sortedEntries.map((w) =>
-          w.unit === "kg" ? w.weight * KG_TO_LBS : w.weight,
-        );
+      const trendSlope = calculateTrendSlope(weightValues);
+      const dailyWeightChange = trendSlope; // approximate daily change
 
-        // We need at least some data to calculate trend
-        if (sortedWeightsLbs.length < MIN_WEIGHT_ENTRIES_FOR_CHECKIN) {
-          throw new Error(
-            `Not enough weight data to calculate trend. Need at least ${MIN_WEIGHT_ENTRIES_FOR_CHECKIN} weigh-ins!`,
-          );
-        }
+      // 3. Calculate suggested intake
+      const bmr = calculateBMR(
+        currentWeight * LBS_TO_KG,
+        settings.heightUnit === 'in' ? settings.height * INCHES_TO_CM : settings.height,
+        settings.age,
+        settings.gender
+      );
 
-        // 2. Use smoothed trend for slope
-        const smoothed = calculateMovingAverage(sortedWeightsLbs, 7);
-        const recentSmoothed = smoothed.slice(-TREND_CALCULATION_DAYS);
-        const slope = calculateTrendSlope(recentSmoothed);
+      const currentTDEE = calculateBackCalculatedTDEE(intake, dailyWeightChange);
+      const goalRate = settings.targetLossRate || 1.0;
 
-        // 3. Back-calculate TDEE
-        const calculatedTDEE = calculateBackCalculatedTDEE(intake, slope);
+      const suggestedIntake = calculateSuggestedIntake({
+        currentTDEE,
+        goalLbsPerWeek: goalRate,
+        lastSuggestedIntake: settings.lastSuggestedIntake,
+        bmr,
+        gender: settings.gender,
+        currentWeight
+      });
 
-        // 4. Get BMR for safety floor
-        const lastEntry = sortedEntries[sortedEntries.length - 1];
-        // Convert weight to kg based on its actual unit, not height unit
-        const weightKg =
-          lastEntry.unit === "kg"
-            ? lastEntry.weight
-            : lastEntry.weight * LBS_TO_KG;
-        const heightCm =
-          settings.heightUnit === "in"
-            ? settings.height * 2.54
-            : settings.height;
-        const bmr = calculateBMR(
-          weightKg,
-          heightCm,
-          settings.age,
-          settings.gender,
-        );
+      // 4. Update settings
+      await db.tdee_settings.update(settings.id!, {
+        lastSuggestedIntake: suggestedIntake,
+        lastUpdated: new Date().toISOString()
+      });
 
-        // 5. Suggest target - normalize currentWeight to lbs for consistency
-        const currentWeightLbs =
-          lastEntry.unit === "kg"
-            ? lastEntry.weight * KG_TO_LBS
-            : lastEntry.weight;
-        const suggestion = calculateSuggestedIntake({
-          currentTDEE: calculatedTDEE,
-          goalLbsPerWeek: settings.targetLossRate || 1,
-          lastSuggestedIntake: settings.lastSuggestedIntake,
-          bmr,
-          gender: settings.gender,
-          currentWeight: settings.currentWeight || currentWeightLbs,
-        });
+      const checkIn: PaceCoachCheckIn = {
+        user_id: userId,
+        date: new Date().toISOString(),
+        averageIntake: intake,
+        targetLossRate: goalRate,
+        calculatedTDEE: currentTDEE,
+        suggestedIntake,
+        weightSlopeLbsPerDay: trendSlope
+      };
 
-        // 6. Save check-in and update settings
-        const checkIn: PaceCoachCheckIn = {
-          user_id: userId,
-          date: new Date().toISOString(),
-          averageIntake: intake,
-          targetLossRate: settings.targetLossRate || 1,
-          suggestedIntake: suggestion,
-          calculatedTDEE,
-          weightSlopeLbsPerDay: slope,
-        };
-
-        await db.pace_coach_checkins.add(checkIn);
-
-        await updateSettings({
-          lastSuggestedIntake: suggestion,
-        });
-
-        onComplete(suggestion);
-      } catch (err) {
-        console.error("Pace Coach check-in error:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to process check-in",
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
-    },
-    [userId, averageIntake, settings, onComplete, updateSettings],
-  );
+      await db.pace_coach_checkins.add(checkIn);
+      onComplete();
+    } catch (error) {
+      console.error("Check-in error:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <div className="p-4 bg-theme-bg-tertiary/30 rounded-xl border border-white/5 animate-in fade-in zoom-in duration-300">
-      <h3 className="text-sm font-bold text-theme-text-primary mb-2 flex items-center gap-2">
-        <span className="text-lg" aria-hidden="true">
-          📊
-        </span>{" "}
-        Pace Coach Check-in
-      </h3>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2.5 rounded-xl bg-theme-accent/10 border border-theme-accent/20">
+          <Info className="w-5 h-5 text-theme-accent" />
+        </div>
         <div>
-          <label
-            htmlFor="checkin-intake"
-            className="text-xs text-theme-text-tertiary mb-2 block"
-          >
-            Over the past 10–14 days, what was your average daily calorie
-            intake?
-          </label>
+          <h2 className="text-xl font-bold text-theme-text-primary">Weekly Check-in</h2>
+          <p className="text-xs text-theme-text-tertiary">Review your progress and adjust targets</p>
+        </div>
+      </div>
 
-          {isLoadingSuggestion ? (
-            <div className="text-xs text-theme-text-tertiary italic animate-pulse">
-              Loading your logging data...
-            </div>
-          ) : hasSufficientData && suggestedIntake !== null ? (
-            <div className="flex items-start gap-2 mb-2 p-2.5 bg-theme-accent/10 rounded-lg border border-theme-accent/20">
-              <Info className="w-4 h-4 text-theme-accent shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-xs text-theme-text-secondary">
-                  <strong className="text-theme-text-primary">
-                    Based on your logs:
-                  </strong>{" "}
-                  You logged <strong>{daysLogged} days</strong> with an average
-                  of{" "}
-                  <strong className="text-theme-accent">
-                    {suggestedIntake} kcal/day
-                  </strong>
-                </p>
-                <p className="text-[10px] text-theme-text-tertiary mt-1">
-                  This is pre-filled below. Adjust if needed or enter your own
-                  estimate.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-start gap-2 mb-2 p-2.5 bg-theme-bg-tertiary/50 rounded-lg border border-theme-bg-border/50">
-              <Info className="w-4 h-4 text-theme-text-tertiary shrink-0 mt-0.5" />
-              <p className="text-xs text-theme-text-tertiary">
-                Not enough logging data to suggest an average. Please estimate
-                your average daily intake over the past 10-14 days.
-              </p>
-            </div>
-          )}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-1.5">
+          <label htmlFor="checkin-weight" className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary px-1">
+            Current Weight (lbs)
+          </label>
+          <input
+            id="checkin-weight"
+            type="number"
+            step="0.1"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            placeholder="e.g. 185.4"
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary text-theme-text-primary focus:ring-2 focus:ring-theme-accent focus:border-transparent transition-all outline-none"
+            required
+          />
         </div>
 
-        {error && <FormMessage type="error" message={error} />}
-
-        <div className="flex gap-2">
-          <div className="relative flex-1">
+        <div className="space-y-1.5">
+          <label htmlFor="checkin-intake" className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary px-1">
+            Average Daily Calories (Last 7 Days)
+          </label>
+          <div className="relative">
             <input
               id="checkin-intake"
               type="number"
               value={averageIntake}
               onChange={(e) => setAverageIntake(e.target.value)}
-              placeholder="e.g. 1800"
-              className="w-full px-4 py-2 rounded-lg border border-white/10 bg-theme-bg-tertiary text-theme-text-primary focus:ring-2 focus:ring-theme-accent focus:border-transparent"
+              placeholder="e.g. 2100"
+              className="w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary text-theme-text-primary focus:ring-2 focus:ring-theme-accent focus:border-transparent transition-all outline-none"
               required
-              autoFocus={!hasSufficientData}
             />
-            <span
-              className="absolute right-3 top-2 text-xs text-theme-text-tertiary"
-              aria-hidden="true"
-            >
-              kcal/day
-            </span>
+            {hasSufficientData && (
+              <div className="absolute right-3 top-3 px-2 py-0.5 rounded-md bg-success/10 border border-success/20">
+                <span className="text-[10px] font-bold text-success uppercase">Auto-calculated</span>
+              </div>
+            )}
           </div>
+          {!hasSufficientData && (
+            <p className="text-[10px] text-warning font-medium px-1">
+              Insufficient logs ({daysLogged}/7 days). Please enter your average manually.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="checkin-notes" className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary px-1">
+            Notes (Optional)
+          </label>
+          <textarea
+            id="checkin-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="How was your energy? Stress? Sleep?"
+            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-theme-bg-tertiary text-theme-text-primary focus:ring-2 focus:ring-theme-accent focus:border-transparent transition-all outline-none min-h-[100px] resize-none"
+          />
+        </div>
+
+        <div className="pt-2 flex flex-col gap-3">
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-2 bg-theme-accent hover:opacity-90 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
-            aria-busy={isSubmitting}
+            className="w-full py-4 bg-theme-accent hover:opacity-90 disabled:opacity-50 text-white font-bold rounded-xl transition-all active:scale-[0.98] shadow-lg shadow-theme-accent/20"
           >
-            {isSubmitting ? "..." : "Save"}
+            {isSubmitting ? "Processing..." : "Complete Check-in"}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-full py-3 text-sm font-bold text-theme-text-tertiary hover:text-theme-text-primary transition-colors"
+          >
+            Cancel
           </button>
         </div>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-[10px] text-theme-text-tertiary hover:text-theme-text-secondary transition-colors uppercase tracking-widest font-bold"
-        >
-          Skip for now
-        </button>
       </form>
     </div>
   );

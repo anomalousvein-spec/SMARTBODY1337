@@ -2,7 +2,6 @@ import { useCallback, useMemo } from "react";
 import { WeightEntry, WaistEntry, MacroEntry } from "../db/models";
 import {
   DEFAULT_USER_ID,
-  INCHES_TO_CM,
   DEFAULT_MAINTENANCE_CALORIES,
   DEFAULT_CUTTING_CALORIES,
   MIN_CHECKINS_FOR_METABOLISM,
@@ -12,6 +11,7 @@ import { useWaistMeasurements } from "./useWaistMeasurements";
 import { useMacroLogs } from "./useMacroLogs";
 import { useTDEESettings } from "./useTDEESettings";
 import { usePaceCoach } from "./usePaceCoach";
+import { calculateWaistToHeightRatio, normalizeMeasurement } from "../utils/calculations";
 
 export interface Metrics {
   latestWeight: WeightEntry | null;
@@ -79,31 +79,44 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
     const latestWeight = weights[weights.length - 1] || null;
     const latestWaist = waist[waist.length - 1] || null;
 
-    // Calculate weight change this week
+    // Calculate weight change this week (Stable comparison of averages)
     let weightChange = 0;
-    if (weights.length > 1) {
-      const lastWeek = new Date();
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      const lastWeekWeight = [...weights]
-        .reverse()
-        .find((w: WeightEntry) => new Date(w.date) <= lastWeek);
-      if (lastWeekWeight && latestWeight) {
-        weightChange = latestWeight.weight - lastWeekWeight.weight;
+    if (weights.length > 0) {
+      const now = new Date();
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(now.getDate() - 7);
+      const fourteenDaysAgo = new Date(now);
+      fourteenDaysAgo.setDate(now.getDate() - 14);
+
+      const recentWeights = weights.filter(w => new Date(w.date) >= sevenDaysAgo);
+      const priorWeights = weights.filter(w => {
+        const d = new Date(w.date);
+        return d >= fourteenDaysAgo && d < sevenDaysAgo;
+      });
+
+      if (recentWeights.length > 0 && priorWeights.length > 0) {
+        const recentAvg = recentWeights.reduce((s, w) => s + w.weight, 0) / recentWeights.length;
+        const priorAvg = priorWeights.reduce((s, w) => s + w.weight, 0) / priorWeights.length;
+        weightChange = recentAvg - priorAvg;
+      } else if (weights.length > 1) {
+        // Fallback to point-to-point if windows are sparse, but still use 7 day window
+        const lastWeek = new Date();
+        lastWeek.setDate(lastWeek.getDate() - 7);
+        const lastWeekWeight = [...weights]
+          .reverse()
+          .find((w: WeightEntry) => new Date(w.date) <= lastWeek);
+        if (lastWeekWeight && latestWeight) {
+          weightChange = latestWeight.weight - lastWeekWeight.weight;
+        }
       }
     }
 
-    // Calculate waist-to-height ratio
+    // Calculate waist-to-height ratio using standardized utils
     let waistRatio = 0;
     if (latestWaist && settings?.height) {
-      const h =
-        settings.heightUnit === "in"
-          ? settings.height
-          : settings.height / INCHES_TO_CM;
-      const w =
-        latestWaist.unit === "in"
-          ? latestWaist.measurement
-          : latestWaist.measurement / INCHES_TO_CM;
-      waistRatio = w / h;
+      const h = normalizeMeasurement(settings.height, settings.heightUnit);
+      const w = normalizeMeasurement(latestWaist.measurement, latestWaist.unit);
+      waistRatio = calculateWaistToHeightRatio(w, h);
     }
 
     // Today's macros

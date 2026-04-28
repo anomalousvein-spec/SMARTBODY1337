@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState } from "react";
 import { calculateMovingAverage } from "../../utils/calculations";
-import { MOVING_AVERAGE_DAYS } from "../../config/constants";
+import { MOVING_AVERAGE_DAYS, CM_TO_IN } from "../../config/constants";
 import { formatDisplayDate } from "../../utils/dates";
 import { useWaistMeasurements } from "../../hooks/useWaistMeasurements";
 import { useApp } from "../../context/AppContext";
@@ -105,7 +105,7 @@ export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
 
     const avgColor = "#10b981";
     const waistValues = waistEntries.map((w: WaistEntry) =>
-      w.unit === "in" ? w.measurement : w.measurement / 2.54,
+      w.unit === "in" ? w.measurement : w.measurement * CM_TO_IN,
     );
 
     return {

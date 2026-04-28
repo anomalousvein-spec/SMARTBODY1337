@@ -15,6 +15,7 @@ export async function calculateTrendRateWithTier(
   priorWeekDate.setDate(priorWeekDate.getDate() - 7);
   const priorIsoWeek = getISOWeek(priorWeekDate);
   const priorWeekDates = getISOWeekDates(priorIsoWeek);
+
   const currentWeights = await db.weights
     .where("[user_id+date]")
     .between(
@@ -24,6 +25,7 @@ export async function calculateTrendRateWithTier(
       true,
     )
     .toArray();
+
   const priorWeights = await db.weights
     .where("[user_id+date]")
     .between(
@@ -33,18 +35,23 @@ export async function calculateTrendRateWithTier(
       true,
     )
     .toArray();
+
   currentWeights.sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
   priorWeights.sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   );
+
   const compliantWeeks = await db.weekly_metrics
     .where("[user_id+iso_week]")
     .below([userId, currentWeekIsoWeek])
     .filter((m) => m.adjustment_eligible)
     .toArray();
+
   const useTier2 = compliantWeeks.length >= 2;
+
+  // Tier 1 logic: Insufficient compliant history, but we still want a stable trend if possible
   if (!useTier2) {
     if (currentWeights.length === 0 || priorWeights.length === 0)
       return {
@@ -53,6 +60,19 @@ export async function calculateTrendRateWithTier(
         canCalculate: false,
         reason: "INSUFFICIENT_WEIGHT_DATA",
       };
+
+    // Optimization: If we have multiple data points, use averages even in Tier 1 to avoid volatility
+    if (currentWeights.length >= 2 && priorWeights.length >= 2) {
+      const currentAvg = currentWeights.reduce((s, w) => s + w.weight, 0) / currentWeights.length;
+      const priorAvg = priorWeights.reduce((s, w) => s + w.weight, 0) / priorWeights.length;
+      return {
+        trendRateLbsPerWeek: currentAvg - priorAvg,
+        tier: 1,
+        canCalculate: true,
+      };
+    }
+
+    // Fallback to point-to-point only if one or both weeks have only 1 entry
     return {
       trendRateLbsPerWeek:
         currentWeights[currentWeights.length - 1].weight -
@@ -61,6 +81,8 @@ export async function calculateTrendRateWithTier(
       canCalculate: true,
     };
   }
+
+  // Tier 2 logic: Established compliant history, strictly require 2+ weigh-ins for confidence
   if (currentWeights.length < 2 || priorWeights.length < 2)
     return {
       trendRateLbsPerWeek: 0,
@@ -68,10 +90,12 @@ export async function calculateTrendRateWithTier(
       canCalculate: false,
       reason: "INSUFFICIENT_WEIGH_INS_FOR_TIER2",
     };
+
   const currentAvg =
     currentWeights.reduce((s, w) => s + w.weight, 0) / currentWeights.length;
   const priorAvg =
     priorWeights.reduce((s, w) => s + w.weight, 0) / priorWeights.length;
+
   return {
     trendRateLbsPerWeek: currentAvg - priorAvg,
     tier: 2,

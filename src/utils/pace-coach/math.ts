@@ -46,18 +46,26 @@ export function calculateSuggestedIntake(params: {
     gender,
     currentWeight,
   } = params;
+
+  const staticFloor = (gender === "male" ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE);
+  const effectiveBmrFloor = Math.max(bmr || 0, staticFloor);
+
   if (currentWeight && currentWeight > 0) {
     let percentage = (goalLbsPerWeek / currentWeight) * 100;
+    // Cap aggressive goals at 1% for auto-suggestions to avoid massive drops
     const effectivePercentage = Math.min(percentage, 1.0);
+
     const result = calculatePercentageLoss(
       currentWeight,
       "lbs",
       effectivePercentage,
       currentTDEE,
-      bmr || (gender === "male" ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE),
+      effectiveBmrFloor,
       gender || "female",
     );
+
     let suggestion = Math.round(result.proposedIntake);
+
     if (lastSuggestedIntake) {
       const diff = suggestion - lastSuggestedIntake;
       const MAX_STEP = PACE_COACH_MAX_ADJUSTMENT_STEP;
@@ -66,11 +74,12 @@ export function calculateSuggestedIntake(params: {
     }
     return suggestion;
   }
+
   const targetDeficit = (goalLbsPerWeek / 7) * 3500;
   let suggestion = Math.round(currentTDEE - targetDeficit);
-  let floor = gender === "male" ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE;
-  if (bmr) floor = Math.max(floor, bmr * 0.8);
-  suggestion = Math.max(suggestion, floor);
+
+  suggestion = Math.max(suggestion, effectiveBmrFloor);
+
   if (lastSuggestedIntake) {
     const diff = suggestion - lastSuggestedIntake;
     const MAX_STEP = PACE_COACH_MAX_ADJUSTMENT_STEP;
