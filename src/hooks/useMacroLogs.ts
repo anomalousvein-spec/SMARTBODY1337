@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
-import { db } from '../db/database';
-import { MacroEntry } from '../db/models';
+import { useState, useCallback, useEffect } from "react";
+import { db } from "../db/database";
+import { MacroEntry } from "../db/models";
 
 /**
  * Hook to fetch macro logs for a specific user.
@@ -15,15 +15,17 @@ export function useMacroLogs(userId: string, startDate?: Date, endDate?: Date) {
   const loadLogs = useCallback(async () => {
     setIsLoading(true);
     try {
-      let query = db.macro_logs.where('[user_id+date]');
+      let query = db.macro_logs.where("[user_id+date]");
 
-      const startStr = startDate ? startDate.toISOString() : '0';
-      const endStr = endDate ? endDate.toISOString() : '9';
+      const startStr = startDate ? startDate.toISOString() : "0";
+      const endStr = endDate ? endDate.toISOString() : "9";
 
-      const results = await query.between([userId, startStr], [userId, endStr]).toArray();
+      const results = await query
+        .between([userId, startStr], [userId, endStr])
+        .toArray();
       setLogs(results);
     } catch (error) {
-      console.error('Error loading macro logs:', error);
+      console.error("Error loading macro logs:", error);
     } finally {
       setIsLoading(false);
     }
@@ -36,6 +38,6 @@ export function useMacroLogs(userId: string, startDate?: Date, endDate?: Date) {
   return {
     logs,
     isLoading,
-    refresh: loadLogs
+    refresh: loadLogs,
   };
 }

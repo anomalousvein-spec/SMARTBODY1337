@@ -1,4 +1,4 @@
-import { USER_STORAGE_KEY, DEFAULT_USER_ID } from '../config/constants';
+import { USER_STORAGE_KEY, DEFAULT_USER_ID } from "../config/constants";
 
 export interface User {
   id: string;
@@ -18,7 +18,7 @@ export const userManager = {
     try {
       return JSON.parse(stored);
     } catch (error) {
-      console.error('Failed to parse user from storage:', error);
+      console.error("Failed to parse user from storage:", error);
       return { id: DEFAULT_USER_ID };
     }
   },
@@ -35,5 +35,5 @@ export const userManager = {
    */
   clearUser: (): void => {
     localStorage.removeItem(USER_STORAGE_KEY);
-  }
+  },
 };

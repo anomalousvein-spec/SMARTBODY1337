@@ -2,7 +2,10 @@
  * Date utilities for Pace Coach
  */
 
-export function isCheckInDue(lastCheckInDate?: string, reminderDays: number = 10): boolean {
+export function isCheckInDue(
+  lastCheckInDate?: string,
+  reminderDays: number = 10,
+): boolean {
   if (!lastCheckInDate) return true;
   const lastDate = new Date(lastCheckInDate);
   const now = new Date();
@@ -11,14 +14,20 @@ export function isCheckInDue(lastCheckInDate?: string, reminderDays: number = 10
   return diffDays >= reminderDays;
 }
 
-export function getNextCheckInDate(lastCheckInDate?: string, reminderDays: number = 14): Date {
+export function getNextCheckInDate(
+  lastCheckInDate?: string,
+  reminderDays: number = 14,
+): Date {
   const lastDate = lastCheckInDate ? new Date(lastCheckInDate) : new Date();
   const nextDate = new Date(lastDate);
   nextDate.setDate(nextDate.getDate() + reminderDays);
   return nextDate;
 }
 
-export function getDaysUntilCheckIn(lastCheckInDate?: string, reminderDays: number = 14): number {
+export function getDaysUntilCheckIn(
+  lastCheckInDate?: string,
+  reminderDays: number = 14,
+): number {
   if (!lastCheckInDate) return 0;
   const lastDate = new Date(lastCheckInDate);
   const now = new Date();
@@ -29,21 +38,29 @@ export function getDaysUntilCheckIn(lastCheckInDate?: string, reminderDays: numb
 }
 
 export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export function getISOWeek(date: Date): string {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+  const weekNo = Math.ceil(
+    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+  );
+  return `${d.getUTCFullYear()}-W${weekNo.toString().padStart(2, "0")}`;
 }
 
 export function getISOWeekDates(isoWeek: string): { start: Date; end: Date } {
-  const [year, week] = isoWeek.split('-W').map(Number);
+  const [year, week] = isoWeek.split("-W").map(Number);
   const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
   const dow = simple.getUTCDay();
   const ISOweekStart = new Date(simple);

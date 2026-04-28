@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
-import { db } from '../db/database';
-import { PaceCoachCheckIn } from '../db/models';
-import { isCheckInDue } from '../utils/paceCoach';
-import { useTDEESettings } from './useTDEESettings';
+import { useState, useCallback, useEffect } from "react";
+import { db } from "../db/database";
+import { PaceCoachCheckIn } from "../db/models";
+import { isCheckInDue } from "../utils/paceCoach";
+import { useTDEESettings } from "./useTDEESettings";
 
 /**
  * Custom hook to manage Pace Coach data and state
@@ -10,7 +10,12 @@ import { useTDEESettings } from './useTDEESettings';
  * @returns Object containing settings, check-in data, loading state, and refresh function
  */
 export function usePaceCoach(userId: string) {
-  const { settings, isLoading: settingsLoading, error: settingsError, refresh: refreshSettings } = useTDEESettings(userId);
+  const {
+    settings,
+    isLoading: settingsLoading,
+    error: settingsError,
+    refresh: refreshSettings,
+  } = useTDEESettings(userId);
   const [lastCheckIn, setLastCheckIn] = useState<PaceCoachCheckIn | null>(null);
   const [checkInCount, setCheckInCount] = useState(0);
   const [showCheckInForm, setShowCheckInForm] = useState(false);
@@ -22,7 +27,7 @@ export function usePaceCoach(userId: string) {
     setError(null);
     try {
       const checkins = await db.pace_coach_checkins
-        .where('user_id')
+        .where("user_id")
         .equals(userId)
         .reverse()
         .toArray();
@@ -33,12 +38,18 @@ export function usePaceCoach(userId: string) {
       }
 
       // Auto-show form if due and enabled
-      if (settings?.paceCoachEnabled && isCheckInDue(checkins[0]?.date, settings.paceCoachReminderDays)) {
+      if (
+        settings?.paceCoachEnabled &&
+        isCheckInDue(checkins[0]?.date, settings.paceCoachReminderDays)
+      ) {
         setShowCheckInForm(true);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load Pace Coach check-ins';
-      console.error('Error loading Pace Coach check-ins:', err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to load Pace Coach check-ins";
+      console.error("Error loading Pace Coach check-ins:", err);
       setError(errorMessage);
     } finally {
       setIsLoadingCheckins(false);
@@ -61,6 +72,6 @@ export function usePaceCoach(userId: string) {
     setShowCheckInForm,
     isLoading: settingsLoading || isLoadingCheckins,
     error: settingsError || error,
-    refresh
+    refresh,
   };
 }

@@ -1,6 +1,6 @@
-import React from 'react';
-import { Palette } from 'lucide-react';
-import { cn } from '../../utils/ui';
+import React from "react";
+import { Palette } from "lucide-react";
+import { cn } from "../../utils/ui";
 
 interface GlassHeaderProps {
   isStandalone: boolean;
@@ -12,12 +12,15 @@ interface GlassHeaderProps {
  * Glassmorphic header component with sticky positioning and animated theme toggle
  * Features branding and theme toggle functionality with enhanced visual feedback
  */
-export default function GlassHeader({ isStandalone, onToggleTheme }: GlassHeaderProps) {
+export default function GlassHeader({
+  isStandalone,
+  onToggleTheme,
+}: GlassHeaderProps) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 glass border-b border-white/10 px-4 py-3.5',
-        isStandalone && 'pt-[max(env(safe-area-inset-top),0.75rem)]'
+        "sticky top-0 z-50 glass border-b border-white/10 px-4 py-3.5",
+        isStandalone && "pt-[max(env(safe-area-inset-top),0.75rem)]",
       )}
       role="banner"
     >
@@ -36,7 +39,10 @@ export default function GlassHeader({ isStandalone, onToggleTheme }: GlassHeader
         >
           {/* Subtle shine effect on hover */}
           <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out" />
-          <Palette className="w-5 h-5 text-theme-text-secondary group-hover:text-theme-accent transition-colors duration-300" aria-hidden="true" />
+          <Palette
+            className="w-5 h-5 text-theme-text-secondary group-hover:text-theme-accent transition-colors duration-300"
+            aria-hidden="true"
+          />
         </button>
       </div>
     </header>

@@ -18,7 +18,11 @@ export const SLIDER_CONFIG = {
 } as const;
 
 // Color-coded zones
-export type SliderZone = 'conservative' | 'recommended' | 'aggressive' | 'notRecommended';
+export type SliderZone =
+  | "conservative"
+  | "recommended"
+  | "aggressive"
+  | "notRecommended";
 
 export interface SliderZoneConfig {
   min: number;
@@ -30,37 +34,37 @@ export interface SliderZoneConfig {
 }
 
 export const SLIDER_ZONES: SliderZoneConfig[] = [
-  { 
-    min: 0.25, 
-    max: 0.49, 
-    color: 'blue', 
-    label: 'Conservative',
-    trackColorClass: 'bg-blue-500',
-    textColorClass: 'text-blue-400'
+  {
+    min: 0.25,
+    max: 0.49,
+    color: "blue",
+    label: "Conservative",
+    trackColorClass: "bg-blue-500",
+    textColorClass: "text-blue-400",
   },
-  { 
-    min: 0.5, 
-    max: 0.75, 
-    color: 'green', 
-    label: 'Recommended',
-    trackColorClass: 'bg-emerald-500',
-    textColorClass: 'text-success'
+  {
+    min: 0.5,
+    max: 0.75,
+    color: "green",
+    label: "Recommended",
+    trackColorClass: "bg-emerald-500",
+    textColorClass: "text-success",
   },
-  { 
+  {
     min: 0.751,
-    max: 1.0, 
-    color: 'yellow', 
-    label: 'Aggressive',
-    trackColorClass: 'bg-yellow-500',
-    textColorClass: 'text-warning'
+    max: 1.0,
+    color: "yellow",
+    label: "Aggressive",
+    trackColorClass: "bg-yellow-500",
+    textColorClass: "text-warning",
   },
-  { 
+  {
     min: 1.001,
-    max: 1.5, 
-    color: 'orange', 
-    label: 'Not Recommended',
-    trackColorClass: 'bg-orange-500',
-    textColorClass: 'text-error'
+    max: 1.5,
+    color: "orange",
+    label: "Not Recommended",
+    trackColorClass: "bg-orange-500",
+    textColorClass: "text-error",
   },
 ];
 
@@ -99,28 +103,31 @@ export function getSliderZone(pct: number): SliderZoneConfig {
  */
 export function calculatePercentageLoss(
   currentWeight: number,
-  weightUnit: 'lbs' | 'kg',
+  weightUnit: "lbs" | "kg",
   percentage: number,
   tdee: number,
   bmr: number,
-  gender: 'male' | 'female'
+  gender: "male" | "female",
 ): PercentageLossResult {
   // Determine BMR floor
-  const bmrFloor = gender === 'male' ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE;
+  const bmrFloor = gender === "male" ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE;
   const effectiveBmrFloor = Math.max(bmr, bmrFloor);
 
   // Convert weight to both units for calculations
-  const weightLbs = weightUnit === 'lbs' ? currentWeight : currentWeight * 2.20462262;
-  const weightKg = weightUnit === 'kg' ? currentWeight : currentWeight * 0.45359237;
+  const weightLbs =
+    weightUnit === "lbs" ? currentWeight : currentWeight * 2.20462262;
+  const weightKg =
+    weightUnit === "kg" ? currentWeight : currentWeight * 0.45359237;
 
   // Calculate weekly loss
   const weeklyLossLbs = weightLbs * (percentage / 100);
   const weeklyLossKg = weightKg * (percentage / 100);
 
   // Calculate daily deficit
-  const dailyDeficitLbs = (weightLbs * (percentage / 100) * CALORIES_PER_LB) / 7;
+  const dailyDeficitLbs =
+    (weightLbs * (percentage / 100) * CALORIES_PER_LB) / 7;
   const dailyDeficitKg = (weightKg * (percentage / 100) * CALORIES_PER_KG) / 7;
-  const dailyDeficit = weightUnit === 'lbs' ? dailyDeficitLbs : dailyDeficitKg;
+  const dailyDeficit = weightUnit === "lbs" ? dailyDeficitLbs : dailyDeficitKg;
 
   // Calculate proposed intake
   const proposedIntake = tdee - dailyDeficit;
@@ -135,25 +142,29 @@ export function calculatePercentageLoss(
   if (isBelowBmrFloor) {
     // Back-calculate the maximum safe percentage
     const maxSafeDeficit = tdee - effectiveBmrFloor;
-    
+
     // Recalculate percentage from max safe deficit
-    const weightForCalc = weightUnit === 'lbs' ? weightLbs : weightKg;
-    const calPerUnit = weightUnit === 'lbs' ? CALORIES_PER_LB : CALORIES_PER_KG;
-    
-    safePercentage = ((maxSafeDeficit * 7) / (weightForCalc * calPerUnit)) * 100;
-    
+    const weightForCalc = weightUnit === "lbs" ? weightLbs : weightKg;
+    const calPerUnit = weightUnit === "lbs" ? CALORIES_PER_LB : CALORIES_PER_KG;
+
+    safePercentage =
+      ((maxSafeDeficit * 7) / (weightForCalc * calPerUnit)) * 100;
+
     // Round down to nearest step (0.05) to stay safe
     safePercentage = Math.floor(safePercentage * 20) / 20;
-    
+
     // Ensure it's within bounds
-    safePercentage = Math.max(SLIDER_CONFIG.min, Math.min(SLIDER_CONFIG.max, safePercentage));
+    safePercentage = Math.max(
+      SLIDER_CONFIG.min,
+      Math.min(SLIDER_CONFIG.max, safePercentage),
+    );
 
     warningMessage = `At this pace, your daily target would drop to ${Math.round(proposedIntake)} kcal — below the safe minimum of ${Math.round(effectiveBmrFloor)} kcal. We've nudged your goal to ${safePercentage.toFixed(2)}% to keep you safe. To lose faster, increase your activity level to raise your TDEE.`;
   }
 
   // Get zone info
   const zoneConfig = getSliderZone(percentage);
-  
+
   // Show protein nudge for 0.75% and above
   const showProteinNudge = percentage >= 0.75;
 
@@ -176,10 +187,10 @@ export function calculatePercentageLoss(
  */
 export function getDynamicLabelText(
   percentage: number,
-  weightLbs: number
+  weightLbs: number,
 ): string {
   const weeklyLoss = weightLbs * (percentage / 100);
-  
+
   if (percentage < 0.5) {
     return `Slow & Steady — ${weeklyLoss.toFixed(1)} lb/week · Recommended for long-term results`;
   } else if (percentage <= 0.75) {

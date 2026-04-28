@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { cn } from '../../utils/ui';
+import React, { useState, useEffect, useCallback } from "react";
+import { cn } from "../../utils/ui";
 import {
   SLIDER_CONFIG,
   SLIDER_ZONES,
@@ -7,19 +7,19 @@ import {
   getDynamicLabelText,
   getHeavyUserMessage,
   getSliderZone,
-} from '../../utils/percentageLoss';
+} from "../../utils/percentageLoss";
 
 export interface PercentageLossSliderProps {
   /** Current weight value */
   currentWeight: number;
   /** Weight unit (lbs or kg) */
-  weightUnit: 'lbs' | 'kg';
+  weightUnit: "lbs" | "kg";
   /** Current TDEE value */
   tdee: number;
   /** Current BMR value */
   bmr: number;
   /** User's gender for BMR floor calculation */
-  gender: 'male' | 'female';
+  gender: "male" | "female";
   /** Current selected percentage value */
   value: number;
   /** Callback when percentage changes */
@@ -59,32 +59,35 @@ export function PercentageLossSlider({
     localValue,
     tdee,
     bmr,
-    gender
+    gender,
   );
 
   // Handle slider change
-  const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseFloat(e.target.value);
-    setLocalValue(newValue);
-    setIsAdjusting(true);
-    
-    // Check if below BMR floor and nudge if needed on the fly
-    const tempResults = calculatePercentageLoss(
-      currentWeight,
-      weightUnit,
-      newValue,
-      tdee,
-      bmr,
-      gender
-    );
+  const handleSliderChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = parseFloat(e.target.value);
+      setLocalValue(newValue);
+      setIsAdjusting(true);
 
-    if (tempResults.isBelowBmrFloor) {
-      onChange(tempResults.safePercentage);
-      setLocalValue(tempResults.safePercentage);
-    } else {
-      onChange(newValue);
-    }
-  }, [currentWeight, weightUnit, tdee, bmr, gender, onChange]);
+      // Check if below BMR floor and nudge if needed on the fly
+      const tempResults = calculatePercentageLoss(
+        currentWeight,
+        weightUnit,
+        newValue,
+        tdee,
+        bmr,
+        gender,
+      );
+
+      if (tempResults.isBelowBmrFloor) {
+        onChange(tempResults.safePercentage);
+        setLocalValue(tempResults.safePercentage);
+      } else {
+        onChange(newValue);
+      }
+    },
+    [currentWeight, weightUnit, tdee, bmr, gender, onChange],
+  );
 
   // Handle slider end (commit the value)
   const handleSliderMouseUp = useCallback(() => {
@@ -96,7 +99,7 @@ export function PercentageLossSlider({
       localValue,
       tdee,
       bmr,
-      gender
+      gender,
     );
     if (finalResults.isBelowBmrFloor) {
       onChange(finalResults.safePercentage);
@@ -111,25 +114,35 @@ export function PercentageLossSlider({
 
   // Calculate gradient stops for track coloring
   const getTrackGradient = () => {
-    const stops = SLIDER_ZONES.map(zone => {
-      const zoneStart = ((zone.min - SLIDER_CONFIG.min) / (SLIDER_CONFIG.max - SLIDER_CONFIG.min)) * 100;
-      const zoneEnd = ((zone.max - SLIDER_CONFIG.min) / (SLIDER_CONFIG.max - SLIDER_CONFIG.min)) * 100;
+    const stops = SLIDER_ZONES.map((zone) => {
+      const zoneStart =
+        ((zone.min - SLIDER_CONFIG.min) /
+          (SLIDER_CONFIG.max - SLIDER_CONFIG.min)) *
+        100;
+      const zoneEnd =
+        ((zone.max - SLIDER_CONFIG.min) /
+          (SLIDER_CONFIG.max - SLIDER_CONFIG.min)) *
+        100;
       // Map color names to approximate hex for gradient
-      let color = '#4D9EFF'; // blue
-      if (zone.color === 'green') color = '#03DAC6';
-      if (zone.color === 'yellow') color = '#EAB308';
-      if (zone.color === 'orange') color = '#F97316';
+      let color = "#4D9EFF"; // blue
+      if (zone.color === "green") color = "#03DAC6";
+      if (zone.color === "yellow") color = "#EAB308";
+      if (zone.color === "orange") color = "#F97316";
 
       return `${color} ${zoneStart}% ${zoneEnd}%`;
     });
-    return `linear-gradient(to right, ${stops.join(', ')})`;
+    return `linear-gradient(to right, ${stops.join(", ")})`;
   };
 
   // Calculate thumb position percentage
-  const thumbPosition = ((localValue - SLIDER_CONFIG.min) / (SLIDER_CONFIG.max - SLIDER_CONFIG.min)) * 100;
+  const thumbPosition =
+    ((localValue - SLIDER_CONFIG.min) /
+      (SLIDER_CONFIG.max - SLIDER_CONFIG.min)) *
+    100;
 
   // Convert weight for display
-  const weightLbs = weightUnit === 'lbs' ? currentWeight : currentWeight * 2.20462262;
+  const weightLbs =
+    weightUnit === "lbs" ? currentWeight : currentWeight * 2.20462262;
 
   // Dynamic label text
   const dynamicLabel = getDynamicLabelText(localValue, weightLbs);
@@ -184,7 +197,7 @@ export function PercentageLossSlider({
               "[&::-moz-range-thumb]:h-0",
               "[&::-ms-thumb]:appearance-none",
               "[&::-ms-thumb]:w-0",
-              "[&::-ms-thumb]:h-0"
+              "[&::-ms-thumb]:h-0",
             )}
           />
 
@@ -196,7 +209,12 @@ export function PercentageLossSlider({
         </div>
 
         <div className="flex items-center justify-center gap-2">
-           <span className={cn("text-3xl font-black tracking-tight", currentZone.textColorClass)}>
+          <span
+            className={cn(
+              "text-3xl font-black tracking-tight",
+              currentZone.textColorClass,
+            )}
+          >
             {localValue.toFixed(2)}%
           </span>
           <span className="text-sm font-bold text-theme-text-tertiary uppercase tracking-widest mt-1">
@@ -221,7 +239,7 @@ export function PercentageLossSlider({
             <p className="text-lg font-bold text-theme-text-primary">
               ~{results.weeklyLossLbs.toFixed(1)} lb/week
             </p>
-            {weightUnit === 'kg' && (
+            {weightUnit === "kg" && (
               <p className="text-[10px] text-theme-text-tertiary font-bold">
                 ({results.weeklyLossKg.toFixed(2)} KG/WEEK)
               </p>
@@ -247,17 +265,26 @@ export function PercentageLossSlider({
         </div>
       ) : (
         /* Status Message */
-        <div className={cn(
-          "rounded-xl p-3 text-xs font-bold uppercase tracking-wide text-center border",
-          results.zone === 'conservative' && "bg-blue-500/5 text-blue-400 border-blue-500/10",
-          results.zone === 'recommended' && "bg-emerald-500/5 text-success border-emerald-500/10",
-          results.zone === 'aggressive' && "bg-yellow-500/5 text-warning border-yellow-500/10",
-          results.zone === 'notRecommended' && "bg-orange-500/5 text-error border-orange-500/10"
-        )}>
-          {results.zone === 'conservative' && "🔵 Conservative — Safe for long-term sustainability"}
-          {results.zone === 'recommended' && "🟢 Recommended — Optimal balance of progress"}
-          {results.zone === 'aggressive' && "🟡 Aggressive but within safe limits"}
-          {results.zone === 'notRecommended' && "🟠 Above recommended limits"}
+        <div
+          className={cn(
+            "rounded-xl p-3 text-xs font-bold uppercase tracking-wide text-center border",
+            results.zone === "conservative" &&
+              "bg-blue-500/5 text-blue-400 border-blue-500/10",
+            results.zone === "recommended" &&
+              "bg-emerald-500/5 text-success border-emerald-500/10",
+            results.zone === "aggressive" &&
+              "bg-yellow-500/5 text-warning border-yellow-500/10",
+            results.zone === "notRecommended" &&
+              "bg-orange-500/5 text-error border-orange-500/10",
+          )}
+        >
+          {results.zone === "conservative" &&
+            "🔵 Conservative — Safe for long-term sustainability"}
+          {results.zone === "recommended" &&
+            "🟢 Recommended — Optimal balance of progress"}
+          {results.zone === "aggressive" &&
+            "🟡 Aggressive but within safe limits"}
+          {results.zone === "notRecommended" && "🟠 Above recommended limits"}
         </div>
       )}
 
@@ -266,8 +293,16 @@ export function PercentageLossSlider({
         <div className="bg-theme-accent/10 border border-theme-accent/20 rounded-xl p-4 flex gap-3 items-center animate-in fade-in slide-in-from-bottom-2 duration-500">
           <span className="text-xl shrink-0">💪</span>
           <p className="text-sm text-theme-text-primary font-medium leading-tight">
-            At this pace, prioritizing <span className="text-theme-accent font-bold">protein (0.7–1g per lb)</span> and
-            <span className="text-theme-accent font-bold"> resistance training</span> is essential to preserve muscle mass.
+            At this pace, prioritizing{" "}
+            <span className="text-theme-accent font-bold">
+              protein (0.7–1g per lb)
+            </span>{" "}
+            and
+            <span className="text-theme-accent font-bold">
+              {" "}
+              resistance training
+            </span>{" "}
+            is essential to preserve muscle mass.
           </p>
         </div>
       )}

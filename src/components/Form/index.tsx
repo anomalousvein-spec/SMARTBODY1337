@@ -1,5 +1,5 @@
-import React from 'react';
-import { cn } from '../../utils/ui';
+import React from "react";
+import { cn } from "../../utils/ui";
 
 export interface InputFieldProps {
   /** Label text for the input field */
@@ -53,11 +53,11 @@ export function InputField({
   id,
   ariaLabel,
 }: InputFieldProps) {
-  const inputId = id || label.toLowerCase().replace(/\s+/g, '-');
-  
+  const inputId = id || label.toLowerCase().replace(/\s+/g, "-");
+
   return (
     <div className={className}>
-      <label 
+      <label
         htmlFor={inputId}
         className="block text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-2 ml-1"
       >
@@ -82,12 +82,17 @@ export function InputField({
           "focus:ring-2 focus:ring-theme-accent/50 focus:border-theme-accent/50",
           "hover:border-white/20",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          error && "border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50",
-          type === "date" && "text-sm"
+          error &&
+            "border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50",
+          type === "date" && "text-sm",
         )}
       />
       {error && (
-        <p id={`${inputId}-error`} className="mt-1.5 ml-1 text-[10px] font-bold text-red-400 uppercase tracking-wide" role="alert">
+        <p
+          id={`${inputId}-error`}
+          className="mt-1.5 ml-1 text-[10px] font-bold text-red-400 uppercase tracking-wide"
+          role="alert"
+        >
           {error}
         </p>
       )}
@@ -132,11 +137,11 @@ export function SelectField({
   id,
   ariaLabel,
 }: SelectFieldProps) {
-  const selectId = id || label.toLowerCase().replace(/\s+/g, '-');
-  
+  const selectId = id || label.toLowerCase().replace(/\s+/g, "-");
+
   return (
     <div className={className}>
-      <label 
+      <label
         htmlFor={selectId}
         className="block text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-2 ml-1"
       >
@@ -154,13 +159,13 @@ export function SelectField({
           "focus:ring-2 focus:ring-theme-accent/50 focus:border-theme-accent/50",
           "hover:border-white/20",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          "appearance-none cursor-pointer pr-10"
+          "appearance-none cursor-pointer pr-10",
         )}
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23a1a1aa'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 0.75rem center',
-          backgroundSize: '1.25rem'
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "right 0.75rem center",
+          backgroundSize: "1.25rem",
         }}
       >
         {options.map((option) => (
@@ -213,11 +218,11 @@ export function TextAreaField({
   id,
   ariaLabel,
 }: TextAreaFieldProps) {
-  const textareaId = id || label.toLowerCase().replace(/\s+/g, '-');
-  
+  const textareaId = id || label.toLowerCase().replace(/\s+/g, "-");
+
   return (
     <div className={className}>
-      <label 
+      <label
         htmlFor={textareaId}
         className="block text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-2 ml-1"
       >
@@ -237,7 +242,7 @@ export function TextAreaField({
           "focus:ring-2 focus:ring-theme-accent/50 focus:border-theme-accent/50",
           "hover:border-white/20",
           "disabled:opacity-50 disabled:cursor-not-allowed",
-          "resize-none"
+          "resize-none",
         )}
       />
     </div>
@@ -246,7 +251,7 @@ export function TextAreaField({
 
 export interface FormMessageProps {
   /** Type of message (error, success, or info) */
-  type: 'error' | 'success' | 'info';
+  type: "error" | "success" | "info";
   /** Message text to display */
   message: string;
 }
@@ -264,9 +269,12 @@ export function FormMessage({ type, message }: FormMessageProps) {
   };
 
   return (
-    <div 
-      className={cn("p-4 rounded-xl text-[10px] font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300", styles[type])}
-      role={type === 'error' ? 'alert' : 'status'}
+    <div
+      className={cn(
+        "p-4 rounded-xl text-[10px] font-bold uppercase tracking-widest animate-in fade-in slide-in-from-top-2 duration-300",
+        styles[type],
+      )}
+      role={type === "error" ? "alert" : "status"}
       aria-live="polite"
     >
       {message}
@@ -296,7 +304,7 @@ export interface SubmitButtonProps {
  */
 export function SubmitButton({
   isSubmitting,
-  submittingText = 'Saving...',
+  submittingText = "Saving...",
   idleText,
   disabled = false,
   className,
@@ -312,13 +320,25 @@ export function SubmitButton({
         "w-full py-4 px-4 bg-theme-accent hover:bg-theme-accent/90 disabled:opacity-50 text-white font-black uppercase tracking-widest rounded-xl transition-all duration-200 active:scale-[0.98]",
         "flex items-center justify-center gap-2",
         "shadow-lg shadow-theme-accent/25 hover:shadow-xl hover:shadow-theme-accent/30",
-        className
+        className,
       )}
     >
       {isSubmitting && (
         <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="none"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          />
         </svg>
       )}
       {isSubmitting ? submittingText : idleText}
@@ -327,5 +347,5 @@ export function SubmitButton({
 }
 
 // Re-export PercentageLossSlider
-export { PercentageLossSlider } from './PercentageLossSlider';
-export type { PercentageLossSliderProps } from './PercentageLossSlider';
+export { PercentageLossSlider } from "./PercentageLossSlider";
+export type { PercentageLossSliderProps } from "./PercentageLossSlider";

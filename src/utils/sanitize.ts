@@ -5,10 +5,10 @@
  * @returns Sanitized string
  */
 export function sanitizeInput(input: string, maxLength: number = 500): string {
-  if (!input) return '';
+  if (!input) return "";
 
   return input
-    .replace(/[<>]/g, '') // Remove HTML brackets
+    .replace(/[<>]/g, "") // Remove HTML brackets
     .trim()
     .slice(0, maxLength);
 }

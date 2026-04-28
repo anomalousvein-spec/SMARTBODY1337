@@ -1,19 +1,51 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Home, Scale, Ruler, Calculator, Utensils, Settings } from 'lucide-react';
-import { cn } from '../../utils/ui';
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import {
+  Home,
+  Scale,
+  Ruler,
+  Calculator,
+  Utensils,
+  Settings,
+} from "lucide-react";
+import { cn } from "../../utils/ui";
 
 interface AnimatedNavProps {
   isStandalone: boolean;
 }
 
 const navItems = [
-  { path: '/', icon: Home, label: 'Dash', ariaLabel: 'Navigate to Dashboard' },
-  { path: '/weight', icon: Scale, label: 'Weight', ariaLabel: 'Navigate to Weight tracking' },
-  { path: '/waist', icon: Ruler, label: 'Waist', ariaLabel: 'Navigate to Waist measurements' },
-  { path: '/macros', icon: Utensils, label: 'Macros', ariaLabel: 'Navigate to Macros logger' },
-  { path: '/tdee', icon: Calculator, label: 'TDEE', ariaLabel: 'Navigate to TDEE calculator' },
-  { path: '/settings', icon: Settings, label: 'Settings', ariaLabel: 'Navigate to Settings' },
+  { path: "/", icon: Home, label: "Dash", ariaLabel: "Navigate to Dashboard" },
+  {
+    path: "/weight",
+    icon: Scale,
+    label: "Weight",
+    ariaLabel: "Navigate to Weight tracking",
+  },
+  {
+    path: "/waist",
+    icon: Ruler,
+    label: "Waist",
+    ariaLabel: "Navigate to Waist measurements",
+  },
+  {
+    path: "/macros",
+    icon: Utensils,
+    label: "Macros",
+    ariaLabel: "Navigate to Macros logger",
+  },
+  {
+    path: "/tdee",
+    icon: Calculator,
+    label: "TDEE",
+    ariaLabel: "Navigate to TDEE calculator",
+  },
+  {
+    path: "/settings",
+    icon: Settings,
+    label: "Settings",
+    ariaLabel: "Navigate to Settings",
+  },
 ] as const;
 
 /**
@@ -27,8 +59,8 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
   return (
     <nav
       className={cn(
-        'fixed bottom-0 left-1/2 z-[60] w-full max-w-md -translate-x-1/2 glass border-t border-white/10 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:max-w-2xl md:rounded-b-[2rem]',
-        isStandalone && 'pb-[max(env(safe-area-inset-bottom),1rem)]'
+        "fixed bottom-0 left-1/2 z-[60] w-full max-w-md -translate-x-1/2 glass border-t border-white/10 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:max-w-2xl md:rounded-b-[2rem]",
+        isStandalone && "pb-[max(env(safe-area-inset-bottom),1rem)]",
       )}
       role="navigation"
       aria-label="Main navigation"
@@ -43,12 +75,12 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
               key={item.path}
               className="absolute bottom-2 w-14 h-10 bg-theme-accent/15 rounded-xl transition-all duration-300 ease-out -z-10"
               style={{
-                left: `calc(${navItems.findIndex(i => i.path === item.path) * (100 / navItems.length)}% + ${100 / navItems.length / 2}% - 28px)`
+                left: `calc(${navItems.findIndex((i) => i.path === item.path) * (100 / navItems.length)}% + ${100 / navItems.length / 2}% - 28px)`,
               }}
             />
           );
         })}
-        
+
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -58,19 +90,21 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
               key={item.path}
               to={item.path}
               className={cn(
-                'relative flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 group',
+                "relative flex flex-col items-center justify-center p-2 rounded-xl transition-all duration-300 group",
                 isActive
-                  ? 'text-theme-accent scale-110'
-                  : 'text-theme-text-tertiary hover:text-theme-text-secondary hover:bg-theme-bg-tertiary/30'
+                  ? "text-theme-accent scale-110"
+                  : "text-theme-text-tertiary hover:text-theme-text-secondary hover:bg-theme-bg-tertiary/30",
               )}
               aria-label={item.ariaLabel}
-              aria-current={isActive ? 'page' : undefined}
+              aria-current={isActive ? "page" : undefined}
             >
-              <Icon 
-                className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-200 group-hover:scale-110" 
-                aria-hidden="true" 
+              <Icon
+                className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-200 group-hover:scale-110"
+                aria-hidden="true"
               />
-              <span className="text-[9px] md:text-[10px] font-medium mt-1 transition-colors duration-200">{item.label}</span>
+              <span className="text-[9px] md:text-[10px] font-medium mt-1 transition-colors duration-200">
+                {item.label}
+              </span>
               {/* Active indicator dot */}
               {isActive && (
                 <span className="absolute -bottom-1 w-1 h-1 bg-theme-accent rounded-full" />

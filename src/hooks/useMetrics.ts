@@ -1,11 +1,17 @@
-import { useCallback, useMemo } from 'react';
-import { WeightEntry, WaistEntry, MacroEntry } from '../db/models';
-import { DEFAULT_USER_ID, INCHES_TO_CM, DEFAULT_MAINTENANCE_CALORIES, DEFAULT_CUTTING_CALORIES, MIN_CHECKINS_FOR_METABOLISM } from '../config/constants';
-import { useWeights } from './useWeights';
-import { useWaistMeasurements } from './useWaistMeasurements';
-import { useMacroLogs } from './useMacroLogs';
-import { useTDEESettings } from './useTDEESettings';
-import { usePaceCoach } from './usePaceCoach';
+import { useCallback, useMemo } from "react";
+import { WeightEntry, WaistEntry, MacroEntry } from "../db/models";
+import {
+  DEFAULT_USER_ID,
+  INCHES_TO_CM,
+  DEFAULT_MAINTENANCE_CALORIES,
+  DEFAULT_CUTTING_CALORIES,
+  MIN_CHECKINS_FOR_METABOLISM,
+} from "../config/constants";
+import { useWeights } from "./useWeights";
+import { useWaistMeasurements } from "./useWaistMeasurements";
+import { useMacroLogs } from "./useMacroLogs";
+import { useTDEESettings } from "./useTDEESettings";
+import { usePaceCoach } from "./usePaceCoach";
 
 export interface Metrics {
   latestWeight: WeightEntry | null;
@@ -32,20 +38,38 @@ export interface Metrics {
  * Composed of granular hooks for better modularity.
  */
 export function useMetrics(userId: string = DEFAULT_USER_ID) {
-  const { weights, isLoading: weightsLoading, refresh: refreshWeights } = useWeights(userId);
-  const { measurements: waist, isLoading: waistLoading, refresh: refreshWaist } = useWaistMeasurements(userId);
-  const { logs: macros, isLoading: macrosLoading, refresh: refreshMacros } = useMacroLogs(userId);
-  const { settings, isLoading: settingsLoading, refresh: refreshSettings, error: settingsError } = useTDEESettings(userId);
+  const {
+    weights,
+    isLoading: weightsLoading,
+    refresh: refreshWeights,
+  } = useWeights(userId);
+  const {
+    measurements: waist,
+    isLoading: waistLoading,
+    refresh: refreshWaist,
+  } = useWaistMeasurements(userId);
+  const {
+    logs: macros,
+    isLoading: macrosLoading,
+    refresh: refreshMacros,
+  } = useMacroLogs(userId);
+  const {
+    settings,
+    isLoading: settingsLoading,
+    refresh: refreshSettings,
+    error: settingsError,
+  } = useTDEESettings(userId);
   const { lastCheckIn, checkInCount } = usePaceCoach(userId);
 
-  const isLoading = weightsLoading || waistLoading || macrosLoading || settingsLoading;
+  const isLoading =
+    weightsLoading || waistLoading || macrosLoading || settingsLoading;
 
   const refresh = useCallback(async () => {
     await Promise.all([
       refreshWeights(),
       refreshWaist(),
       refreshMacros(),
-      refreshSettings()
+      refreshSettings(),
     ]);
   }, [refreshWeights, refreshWaist, refreshMacros, refreshSettings]);
 
@@ -60,7 +84,9 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
     if (weights.length > 1) {
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
-      const lastWeekWeight = [...weights].reverse().find((w: WeightEntry) => new Date(w.date) <= lastWeek);
+      const lastWeekWeight = [...weights]
+        .reverse()
+        .find((w: WeightEntry) => new Date(w.date) <= lastWeek);
       if (lastWeekWeight && latestWeight) {
         weightChange = latestWeight.weight - lastWeekWeight.weight;
       }
@@ -69,30 +95,58 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
     // Calculate waist-to-height ratio
     let waistRatio = 0;
     if (latestWaist && settings?.height) {
-      const h = settings.heightUnit === 'in' ? settings.height : settings.height / INCHES_TO_CM;
-      const w = latestWaist.unit === 'in' ? latestWaist.measurement : latestWaist.measurement / INCHES_TO_CM;
+      const h =
+        settings.heightUnit === "in"
+          ? settings.height
+          : settings.height / INCHES_TO_CM;
+      const w =
+        latestWaist.unit === "in"
+          ? latestWaist.measurement
+          : latestWaist.measurement / INCHES_TO_CM;
       waistRatio = w / h;
     }
 
     // Today's macros
-    const today = new Date().toISOString().split('T')[0];
-    const todayMacros = macros.find((m: MacroEntry) => m.date.startsWith(today)) || null;
+    const today = new Date().toISOString().split("T")[0];
+    const todayMacros =
+      macros.find((m: MacroEntry) => m.date.startsWith(today)) || null;
 
     // Weekly averages
     const last7Days = new Date();
     last7Days.setDate(last7Days.getDate() - 7);
-    const recentMacros = macros.filter((m: MacroEntry) => new Date(m.date) >= last7Days);
-    const weeklyAvgCalories = recentMacros.length > 0
-      ? Math.round(recentMacros.reduce((sum: number, m: MacroEntry) => sum + m.calories, 0) / recentMacros.length)
-      : 0;
-    const weeklyAvgProtein = recentMacros.length > 0
-      ? Math.round(recentMacros.reduce((sum: number, m: MacroEntry) => sum + m.protein, 0) / recentMacros.length)
-      : 0;
+    const recentMacros = macros.filter(
+      (m: MacroEntry) => new Date(m.date) >= last7Days,
+    );
+    const weeklyAvgCalories =
+      recentMacros.length > 0
+        ? Math.round(
+            recentMacros.reduce(
+              (sum: number, m: MacroEntry) => sum + m.calories,
+              0,
+            ) / recentMacros.length,
+          )
+        : 0;
+    const weeklyAvgProtein =
+      recentMacros.length > 0
+        ? Math.round(
+            recentMacros.reduce(
+              (sum: number, m: MacroEntry) => sum + m.protein,
+              0,
+            ) / recentMacros.length,
+          )
+        : 0;
 
     // Pace Coach calculated values (when sufficient data exists)
-    const hasPaceCoachData = settings?.paceCoachEnabled && checkInCount >= MIN_CHECKINS_FOR_METABOLISM && lastCheckIn != null;
-    const paceCoachMaintenance = hasPaceCoachData ? lastCheckIn!.calculatedTDEE : undefined;
-    const paceCoachTarget = hasPaceCoachData ? settings.lastSuggestedIntake : undefined;
+    const hasPaceCoachData =
+      settings?.paceCoachEnabled &&
+      checkInCount >= MIN_CHECKINS_FOR_METABOLISM &&
+      lastCheckIn != null;
+    const paceCoachMaintenance = hasPaceCoachData
+      ? lastCheckIn!.calculatedTDEE
+      : undefined;
+    const paceCoachTarget = hasPaceCoachData
+      ? settings.lastSuggestedIntake
+      : undefined;
 
     return {
       latestWeight,
@@ -110,7 +164,7 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
       paceCoachMaintenance,
       paceCoachTarget,
       hasPaceCoachData,
-      checkInCount
+      checkInCount,
     };
   }, [weights, waist, macros, settings, isLoading, lastCheckIn, checkInCount]);
 

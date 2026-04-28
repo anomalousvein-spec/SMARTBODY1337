@@ -1,3 +1,3 @@
-export { WeightLogger } from './WeightLogger';
-export { WeightChart } from './WeightChart';
-export { WeightAnalytics } from './WeightAnalytics';
+export { WeightLogger } from "./WeightLogger";
+export { WeightChart } from "./WeightChart";
+export { WeightAnalytics } from "./WeightAnalytics";

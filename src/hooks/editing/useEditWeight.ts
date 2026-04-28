@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { WeightEntry } from '../../db/models';
+import { useState, useCallback } from "react";
+import { WeightEntry } from "../../db/models";
 
 /**
  * Hook to manage the state of editing a weight entry.
@@ -20,6 +20,6 @@ export function useEditWeight() {
   return {
     editingWeight,
     startEditing,
-    clearEditing
+    clearEditing,
   };
 }

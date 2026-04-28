@@ -1,10 +1,19 @@
-import React from 'react';
-import { Trash2, Shield, Info, Database, Moon, Sun, Zap, AlertTriangle } from 'lucide-react';
-import { Card } from '../../components';
-import { db } from '../../db/database';
-import { APP_VERSION } from '../../config/constants';
-import { useApp, Theme } from '../../context/AppContext';
-import { motion } from 'framer-motion';
+import React from "react";
+import {
+  Trash2,
+  Shield,
+  Info,
+  Database,
+  Moon,
+  Sun,
+  Zap,
+  AlertTriangle,
+} from "lucide-react";
+import { Card } from "../../components";
+import { db } from "../../db/database";
+import { APP_VERSION } from "../../config/constants";
+import { useApp, Theme } from "../../context/AppContext";
+import { motion } from "framer-motion";
 
 /**
  * SettingsPanel provides administrative controls and app information.
@@ -14,10 +23,14 @@ export function SettingsPanel() {
   const { theme, setTheme } = useApp();
 
   const handleClearData = async () => {
-    const confirmed = window.confirm('Are you sure you want to delete all your data? This action is permanent and cannot be undone.');
+    const confirmed = window.confirm(
+      "Are you sure you want to delete all your data? This action is permanent and cannot be undone.",
+    );
     if (!confirmed) return;
 
-    const secondConfirmation = window.confirm('Final warning: This will erase all logs, TDEE settings, and body measurements. Proceed?');
+    const secondConfirmation = window.confirm(
+      "Final warning: This will erase all logs, TDEE settings, and body measurements. Proceed?",
+    );
     if (!secondConfirmation) return;
 
     try {
@@ -26,20 +39,38 @@ export function SettingsPanel() {
         db.waist_measurements.clear(),
         db.macro_logs.clear(),
         db.tdee_settings.clear(),
-        db.pace_coach_checkins.clear()
+        db.pace_coach_checkins.clear(),
       ]);
       localStorage.clear();
-      window.location.href = '/';
+      window.location.href = "/";
     } catch (error) {
-      console.error('Failed to clear data:', error);
-      alert('An error occurred while clearing data. Please try again.');
+      console.error("Failed to clear data:", error);
+      alert("An error occurred while clearing data. Please try again.");
     }
   };
 
   const themes = [
-    { id: 'default', name: 'Midnight', icon: Moon, desc: 'Dark Blue', accent: '#4D9EFF' },
-    { id: 'jewel', name: 'Jewel', icon: Zap, desc: 'Deep Emerald', accent: '#3b82f6' },
-    { id: 'amoled', name: 'AMOLED', icon: Sun, desc: 'Pure Black', accent: '#3b82f6' }
+    {
+      id: "default",
+      name: "Midnight",
+      icon: Moon,
+      desc: "Dark Blue",
+      accent: "#4D9EFF",
+    },
+    {
+      id: "jewel",
+      name: "Jewel",
+      icon: Zap,
+      desc: "Deep Emerald",
+      accent: "#3b82f6",
+    },
+    {
+      id: "amoled",
+      name: "AMOLED",
+      icon: Sun,
+      desc: "Pure Black",
+      accent: "#3b82f6",
+    },
   ];
 
   return (
@@ -64,16 +95,22 @@ export function SettingsPanel() {
               onClick={() => setTheme(t.id as Theme)}
               className={`relative flex items-center gap-4 p-4 rounded-2xl border transition-all overflow-hidden ${
                 theme === t.id
-                  ? 'bg-theme-accent/10 border-theme-accent text-theme-accent shadow-lg shadow-theme-accent/5'
-                  : 'bg-theme-bg-tertiary/40 border-white/5 text-theme-text-tertiary hover:border-white/10'
+                  ? "bg-theme-accent/10 border-theme-accent text-theme-accent shadow-lg shadow-theme-accent/5"
+                  : "bg-theme-bg-tertiary/40 border-white/5 text-theme-text-tertiary hover:border-white/10"
               }`}
             >
-              <div className={`p-3 rounded-xl ${theme === t.id ? 'bg-theme-accent text-white' : 'bg-theme-bg-tertiary text-theme-text-tertiary'}`}>
+              <div
+                className={`p-3 rounded-xl ${theme === t.id ? "bg-theme-accent text-white" : "bg-theme-bg-tertiary text-theme-text-tertiary"}`}
+              >
                 <t.icon className="w-5 h-5" />
               </div>
               <div className="text-left flex-1">
-                <span className="block text-sm font-bold uppercase tracking-wide">{t.name}</span>
-                <span className="block text-[10px] opacity-70 tracking-widest uppercase font-black">{t.desc}</span>
+                <span className="block text-sm font-bold uppercase tracking-wide">
+                  {t.name}
+                </span>
+                <span className="block text-[10px] opacity-70 tracking-widest uppercase font-black">
+                  {t.desc}
+                </span>
               </div>
               {theme === t.id && (
                 <motion.div
@@ -97,8 +134,12 @@ export function SettingsPanel() {
               <Trash2 className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold text-theme-text-primary">Clear Local Data</p>
-              <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">Permanently delete all logs and settings</p>
+              <p className="text-sm font-bold text-theme-text-primary">
+                Clear Local Data
+              </p>
+              <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">
+                Permanently delete all logs and settings
+              </p>
             </div>
           </div>
           <button
@@ -114,8 +155,12 @@ export function SettingsPanel() {
             <Database className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-bold text-theme-text-primary">Local Storage Only</p>
-            <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">All your health data stays on this device</p>
+            <p className="text-sm font-bold text-theme-text-primary">
+              Local Storage Only
+            </p>
+            <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">
+              All your health data stays on this device
+            </p>
           </div>
         </Card>
       </section>
@@ -130,8 +175,12 @@ export function SettingsPanel() {
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-sm font-bold text-theme-text-primary">Private by Design</p>
-            <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">No tracking or external data processing</p>
+            <p className="text-sm font-bold text-theme-text-primary">
+              Private by Design
+            </p>
+            <p className="text-[10px] text-theme-text-tertiary uppercase font-black opacity-70">
+              No tracking or external data processing
+            </p>
           </div>
         </Card>
       </section>
@@ -140,7 +189,9 @@ export function SettingsPanel() {
         <div className="p-4 bg-orange-500/5 border border-orange-500/10 rounded-2xl flex gap-3 items-start">
           <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
           <p className="text-[10px] text-orange-500/80 leading-relaxed font-bold uppercase tracking-wide">
-            This app is a client-side PWA. Clearing your browser cache or deleting site data through browser settings may also erase your logs. We recommend regular data exports (coming soon).
+            This app is a client-side PWA. Clearing your browser cache or
+            deleting site data through browser settings may also erase your
+            logs. We recommend regular data exports (coming soon).
           </p>
         </div>
 
@@ -153,7 +204,9 @@ export function SettingsPanel() {
                 SmartBody<span className="text-theme-accent">1337</span>
               </p>
             </div>
-            <p className="text-[9px] text-theme-text-tertiary">BUILD v{APP_VERSION}</p>
+            <p className="text-[9px] text-theme-text-tertiary">
+              BUILD v{APP_VERSION}
+            </p>
           </div>
           <div className="h-[1px] flex-1 bg-white/5" />
         </div>

@@ -3,22 +3,22 @@
  */
 
 // Default user ID for single-user mode (deprecated - use UserManager)
-export const DEFAULT_USER_ID = 'user-1';
+export const DEFAULT_USER_ID = "user-1";
 
 // User management
-export const USER_STORAGE_KEY = 'smartbody_current_user';
+export const USER_STORAGE_KEY = "smartbody_current_user";
 
 // App metadata
-export const APP_NAME = 'SMARTBODY1337';
-export const APP_VERSION = '1.0.0';
+export const APP_NAME = "SMARTBODY1337";
+export const APP_VERSION = "1.0.0";
 
 // Database settings
-export const DB_NAME = 'smartbody1337-db';
+export const DB_NAME = "smartbody1337-db";
 export const DB_VERSION = 3; // Must match database.ts schema version
 
 // Weight tracking settings
-export const DEFAULT_WEIGHT_UNIT: 'lbs' | 'kg' = 'lbs';
-export const DEFAULT_HEIGHT_UNIT: 'in' | 'cm' = 'in';
+export const DEFAULT_WEIGHT_UNIT: "lbs" | "kg" = "lbs";
+export const DEFAULT_HEIGHT_UNIT: "in" | "cm" = "in";
 
 // Macro tracking defaults
 export const DEFAULT_PROTEIN_RATIO = 0.4;
@@ -70,19 +70,38 @@ export const MONTHLY_AVERAGE_DAYS = 30;
 
 // Waist-to-Height Ratio Health Categories
 export const WAIST_RATIO_CATEGORIES = {
-  UNDERWEIGHT: { threshold: 0.42, label: 'Underweight', description: 'Below healthy range' },
-  HEALTHY_LOW: { threshold: 0.48, label: 'Healthy', description: 'Optimal health range' },
-  HEALTHY_HIGH: { threshold: 0.53, label: 'Overweight', description: 'Increased health risk' },
-  OBESE_1: { threshold: 0.58, label: 'Obese Class I', description: 'High health risk' },
-  OBESE_2_PLUS: { label: 'Obese Class II+', description: 'Very high health risk' },
+  UNDERWEIGHT: {
+    threshold: 0.42,
+    label: "Underweight",
+    description: "Below healthy range",
+  },
+  HEALTHY_LOW: {
+    threshold: 0.48,
+    label: "Healthy",
+    description: "Optimal health range",
+  },
+  HEALTHY_HIGH: {
+    threshold: 0.53,
+    label: "Overweight",
+    description: "Increased health risk",
+  },
+  OBESE_1: {
+    threshold: 0.58,
+    label: "Obese Class I",
+    description: "High health risk",
+  },
+  OBESE_2_PLUS: {
+    label: "Obese Class II+",
+    description: "Very high health risk",
+  },
 } as const;
 
 // Quick log display categories (simplified for dashboard)
 export const WAIST_RATIO_DISPLAY_CATEGORIES = {
-  SLIM: { threshold: 0.43, label: 'Slim' },
-  HEALTHY: { threshold: 0.53, label: 'Healthy' },
-  OVERWEIGHT: { threshold: 0.58, label: 'Overweight' },
-  HIGH_RISK: { label: 'High Risk' },
+  SLIM: { threshold: 0.43, label: "Slim" },
+  HEALTHY: { threshold: 0.53, label: "Healthy" },
+  OVERWEIGHT: { threshold: 0.58, label: "Overweight" },
+  HIGH_RISK: { label: "High Risk" },
 } as const;
 
 // Activity level multipliers for TDEE calculation
