@@ -27,7 +27,7 @@ export interface TDEESettings {
   heightUnit: 'in' | 'cm';
   activityLevel: ActivityLevel;
   targetWeight?: number;
-  targetLossRate?: number; // lbs/week
+  targetLossRate?: number; // % body weight per week (0.25-1.5)
   currentWeight?: number; // For macro recommendations
   tdee?: number; // Maintenance calories
   cuttingCalories?: number; // Deficit calories

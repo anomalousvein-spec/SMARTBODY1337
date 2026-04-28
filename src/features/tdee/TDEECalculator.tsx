@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { InputField, SelectField, FormMessage, SubmitButton } from '../../components/Form';
+import { InputField, SelectField, FormMessage, SubmitButton, PercentageLossSlider } from '../../components/Form';
 import { Card, Skeleton } from '../../components';
 import { useTDEESettings } from '../../hooks/useTDEESettings';
 import { TDEESettings } from '../../db/models';
@@ -24,6 +24,7 @@ import { useApp } from '../../context/AppContext';
 import { PaceCoachSettings } from '../pace-coach/PaceCoachSettings';
 import { StandardResultsView } from './components/StandardResultsView';
 import { AdvancedResultsView } from './components/AdvancedResultsView';
+import { SLIDER_CONFIG } from '../../utils/percentageLoss';
 
 const ACTIVITY_LEVELS = [
   { value: 'sedentary', label: 'Sedentary (Little/No Exercise)' },
@@ -46,7 +47,7 @@ export function TDEECalculator() {
   const [weightUnit, setWeightUnit] = useState<'lbs' | 'kg'>('lbs');
   const [activityLevel, setActivityLevel] = useState<TDEESettings['activityLevel']>('moderately_active');
   const [targetWeight, setTargetWeight] = useState('');
-  const [targetLossRate, setTargetLossRate] = useState('');
+  const [targetLossRate, setTargetLossRate] = useState(SLIDER_CONFIG.default.toString());
 
   const [useAdvancedMode, setUseAdvancedMode] = useState(false);
   const [waist, setWaist] = useState('');
@@ -60,6 +61,30 @@ export function TDEECalculator() {
   const [results, setResults] = useState<{ bmr: number; tdee: number; cuttingCalories: number } | null>(null);
   const [advancedResults, setAdvancedResults] = useState<AdvancedBMRResult | null>(null);
   const [macroTargets, setMacroTargets] = useState<AdvancedMacroTargets | null>(null);
+  
+  // Compute BMR and TDEE in real-time for the slider preview
+  const liveWeight = weight ? parseFloat(weight) : 0;
+  const liveWeightKg = weightUnit === 'lbs' ? liveWeight * LBS_TO_KG : liveWeight;
+  const liveHeightCm = heightUnit === 'in' ? parseFloat(height || '0') * INCHES_TO_CM : parseFloat(height || '0');
+  
+  let liveBmr = results?.bmr || (gender === 'male' ? 1500 : 1200);
+  let liveTdee = results?.tdee || 2000;
+  
+  if (liveWeight > 0 && liveHeightCm > 0 && age) {
+    const ageValue = parseInt(age);
+    if (useAdvancedMode && waist && neck) {
+      const waistCm = measurementUnit === 'in' ? parseFloat(waist) * INCHES_TO_CM : parseFloat(waist);
+      const neckCm = measurementUnit === 'in' ? parseFloat(neck) * INCHES_TO_CM : parseFloat(neck);
+      const hipCm = gender === 'female' && hip 
+        ? (measurementUnit === 'in' ? parseFloat(hip) * INCHES_TO_CM : parseFloat(hip))
+        : undefined;
+      const advBmr = calculateAdvancedBMR(liveWeightKg, liveHeightCm, waistCm, neckCm, hipCm, gender);
+      liveBmr = advBmr.bmr;
+    } else {
+      liveBmr = calculateBMR(liveWeightKg, liveHeightCm, ageValue, gender);
+    }
+    liveTdee = calculateTDEE(liveBmr, activityLevel);
+  }
 
   useEffect(() => {
     if (fullSettings) {
@@ -71,7 +96,9 @@ export function TDEECalculator() {
       setWeightUnit(fullSettings.heightUnit === 'in' ? 'lbs' : 'kg'); // Sync with height unit preference for consistency
       setActivityLevel(fullSettings.activityLevel);
       setTargetWeight(fullSettings.targetWeight?.toString() || '');
-      setTargetLossRate(fullSettings.targetLossRate?.toString() || '');
+      // Use percentage from settings, or default to 0.75%
+      const savedPercentage = fullSettings.targetLossRate ?? SLIDER_CONFIG.default;
+      setTargetLossRate(savedPercentage.toString());
 
       const mode = fullSettings.calculationMode || 'standard';
       setUseAdvancedMode(mode === 'advanced');
@@ -168,7 +195,7 @@ export function TDEECalculator() {
       const heightValue = parseFloat(height);
       const ageValue = parseInt(age);
       const targetWeightValue = targetWeight ? parseFloat(targetWeight) : undefined;
-      const targetLossRateValue = targetLossRate ? parseFloat(targetLossRate) : undefined;
+      const targetLossRateValue = targetLossRate ? parseFloat(targetLossRate) : SLIDER_CONFIG.default;
 
       const weightKg = weightUnit === 'lbs' ? weightValue * LBS_TO_KG : weightValue;
       const heightCm = heightUnit === 'in' ? heightValue * INCHES_TO_CM : heightValue;
@@ -194,7 +221,12 @@ export function TDEECalculator() {
       }
 
       const tdee = calculateTDEE(bmr, activityLevel);
-      const targetCalories = Math.round(tdee - (targetLossRateValue || 0) * 500);
+      
+      // Calculate calorie deficit using percentage-based formula
+      const weightForCalc = weightUnit === 'lbs' ? weightValue : weightValue * LBS_TO_KG;
+      const caloriesPerUnit = weightUnit === 'lbs' ? 3500 : 7700;
+      const dailyDeficit = (weightForCalc * (targetLossRateValue / 100) * caloriesPerUnit) / 7;
+      const targetCalories = Math.round(tdee - dailyDeficit);
 
       let macroTargetsResult: AdvancedMacroTargets | null = null;
       if (advResults && useAdvancedMode) {
@@ -291,10 +323,28 @@ export function TDEECalculator() {
 
         <SelectField label="Activity Level" value={activityLevel} onChange={(val) => setActivityLevel(val as TDEESettings['activityLevel'])} options={ACTIVITY_LEVELS} />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <InputField label="Target Weight (optional)" type="number" value={targetWeight} onChange={setTargetWeight} step="0.1" placeholder="160" />
-          <InputField label="Target Loss Rate (lbs/week)" type="number" value={targetLossRate} onChange={setTargetLossRate} step="0.1" min="0.1" max="2.5" placeholder="1" />
         </div>
+
+        {/* Percentage-based Loss Rate Slider - replaces flat lbs/week selector */}
+        {weight && !isNaN(parseFloat(weight)) ? (
+          <PercentageLossSlider
+            currentWeight={parseFloat(weight)}
+            weightUnit={weightUnit}
+            tdee={liveTdee}
+            bmr={liveBmr}
+            gender={gender}
+            value={parseFloat(targetLossRate)}
+            onChange={(pct) => setTargetLossRate(pct.toString())}
+          />
+        ) : (
+          <div className="bg-theme-bg-tertiary/40 border border-white/5 rounded-xl p-4 text-center">
+            <p className="text-sm text-theme-text-tertiary">
+              Enter your current weight above to set your loss pace
+            </p>
+          </div>
+        )}
 
         {/* Advanced Mode Fields - Hidden if Standard */}
         {useAdvancedMode && (
