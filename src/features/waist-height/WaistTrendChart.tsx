@@ -138,7 +138,7 @@ export function WaistTrendChart({ startDate, endDate }: WaistTrendChartProps) {
           titleFont: { size: 13 },
           bodyFont: { size: 12 },
           callbacks: {
-            label: (context: TooltipItem<"line">) => `${context.dataset.label}: ${context.parsed.y.toFixed(1)} in`
+            label: (context: TooltipItem<"line">) => `${context.dataset.label}: ${(context.parsed.y ?? 0).toFixed(1)} in`
           }
         }
       },

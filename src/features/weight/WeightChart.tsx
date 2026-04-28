@@ -139,7 +139,7 @@ export function WeightChart({ startDate, endDate, onEdit, onDelete }: WeightChar
           titleFont: { size: 13 },
           bodyFont: { size: 12 },
           callbacks: {
-            label: (context: TooltipItem<"line">) => `${context.dataset.label}: ${context.parsed.y.toFixed(1)} lbs`
+            label: (context: TooltipItem<"line">) => `${context.dataset.label}: ${(context.parsed.y ?? 0).toFixed(1)} lbs`
           }
         }
       },
