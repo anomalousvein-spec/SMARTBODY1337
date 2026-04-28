@@ -43,8 +43,20 @@ export function MacroLogger({ onMacroLogged }: MacroLoggerProps) {
       }
 
       const protVal = validateMacro(protein, "protein");
-      if (!protVal.valid) {
+      if (protein && !protVal.valid) {
         setError(protVal.error!);
+        return;
+      }
+
+      const carbVal = validateMacro(carbs, "carbohydrates");
+      if (carbs && !carbVal.valid) {
+        setError(carbVal.error!);
+        return;
+      }
+
+      const fatVal = validateMacro(fats, "fats");
+      if (fats && !fatVal.valid) {
+        setError(fatVal.error!);
         return;
       }
 
@@ -103,6 +115,7 @@ export function MacroLogger({ onMacroLogged }: MacroLoggerProps) {
             onChange={setCalories}
             placeholder="0"
             required
+            error={error && error.includes("Calories") ? error : undefined}
           />
           <InputField
             label="Protein (g)"
@@ -110,6 +123,7 @@ export function MacroLogger({ onMacroLogged }: MacroLoggerProps) {
             value={protein}
             onChange={setProtein}
             placeholder="0"
+            error={error && error.includes("protein") ? error : undefined}
           />
         </div>
 
@@ -120,6 +134,7 @@ export function MacroLogger({ onMacroLogged }: MacroLoggerProps) {
             value={carbs}
             onChange={setCarbs}
             placeholder="0"
+            error={error && error.includes("carbohydrates") ? error : undefined}
           />
           <InputField
             label="Fats (g)"
@@ -127,6 +142,7 @@ export function MacroLogger({ onMacroLogged }: MacroLoggerProps) {
             value={fats}
             onChange={setFats}
             placeholder="0"
+            error={error && error.includes("fats") ? error : undefined}
           />
         </div>
 

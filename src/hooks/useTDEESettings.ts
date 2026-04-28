@@ -12,7 +12,7 @@ export function useTDEESettings(userId: string) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadSettings = useCallback(async () => {
+  const loadSettings = useCallback(async (isMounted: boolean) => {
     if (!userId) return;
     setIsLoading(true);
     setError(null);
@@ -20,25 +20,23 @@ export function useTDEESettings(userId: string) {
       // Keying by userId to support multi-user architecture
       const s = await db.tdee_settings.get(userId);
       if (s) {
-        setSettings(s);
+        if (isMounted) setSettings(s);
       } else {
-        // Migration check: if 'global' exists and matches userId (or is just there), we might want to handle it
-        // For now, we assume a fresh start or simple transition
         const globalSettings = await db.tdee_settings.get("global");
         if (globalSettings && globalSettings.user_id === userId) {
           const migrated = { ...globalSettings, id: userId };
           await db.tdee_settings.put(migrated);
           await db.tdee_settings.delete("global");
-          setSettings(migrated);
+          if (isMounted) setSettings(migrated);
         } else {
-          setSettings(null);
+          if (isMounted) setSettings(null);
         }
       }
     } catch (err) {
       console.error("Error loading TDEE settings:", err);
-      setError("Failed to load settings");
+      if (isMounted) setError("Failed to load settings");
     } finally {
-      setIsLoading(false);
+      if (isMounted) setIsLoading(false);
     }
   }, [userId]);
 
@@ -77,7 +75,11 @@ export function useTDEESettings(userId: string) {
   );
 
   useEffect(() => {
-    loadSettings();
+    let isMounted = true;
+    loadSettings(isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [loadSettings]);
 
   return {
@@ -85,6 +87,6 @@ export function useTDEESettings(userId: string) {
     isLoading,
     error,
     updateSettings,
-    refresh: loadSettings,
+    refresh: () => loadSettings(true),
   };
 }

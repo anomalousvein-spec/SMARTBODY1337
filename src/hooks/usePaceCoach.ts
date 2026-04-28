@@ -22,7 +22,7 @@ export function usePaceCoach(userId: string) {
   const [isLoadingCheckins, setIsLoadingCheckins] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadCheckins = useCallback(async () => {
+  const loadCheckins = useCallback(async (isMounted: boolean) => {
     setIsLoadingCheckins(true);
     setError(null);
     try {
@@ -31,6 +31,8 @@ export function usePaceCoach(userId: string) {
         .equals(userId)
         .reverse()
         .toArray();
+
+      if (!isMounted) return;
 
       setCheckInCount(checkins.length);
       if (checkins.length > 0) {
@@ -50,18 +52,22 @@ export function usePaceCoach(userId: string) {
           ? err.message
           : "Failed to load Pace Coach check-ins";
       console.error("Error loading Pace Coach check-ins:", err);
-      setError(errorMessage);
+      if (isMounted) setError(errorMessage);
     } finally {
-      setIsLoadingCheckins(false);
+      if (isMounted) setIsLoadingCheckins(false);
     }
   }, [userId, settings]);
 
   useEffect(() => {
-    loadCheckins();
+    let isMounted = true;
+    loadCheckins(isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [loadCheckins]);
 
   const refresh = useCallback(async () => {
-    await Promise.all([refreshSettings(), loadCheckins()]);
+    await Promise.all([refreshSettings(), loadCheckins(true)]);
   }, [refreshSettings, loadCheckins]);
 
   return {

@@ -10,7 +10,7 @@ import {
 } from "../../utils/calculations";
 import { LBS_TO_KG, INCHES_TO_CM, KG_TO_LBS } from "../../config/constants";
 
-export function MacroSummary() {
+export const MacroSummary = React.memo(function MacroSummary() {
   const { user } = useApp();
   const userId = user.id;
   const { logs, isLoading: logsLoading } = useMacroLogs(userId);
@@ -183,4 +183,4 @@ export function MacroSummary() {
       )}
     </Card>
   );
-}
+});

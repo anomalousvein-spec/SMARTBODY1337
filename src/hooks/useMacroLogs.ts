@@ -12,7 +12,7 @@ export function useMacroLogs(userId: string, startDate?: Date, endDate?: Date) {
   const [logs, setLogs] = useState<MacroEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadLogs = useCallback(async () => {
+  const loadLogs = useCallback(async (isMounted: boolean) => {
     setIsLoading(true);
     try {
       let query = db.macro_logs.where("[user_id+date]");
@@ -23,21 +23,29 @@ export function useMacroLogs(userId: string, startDate?: Date, endDate?: Date) {
       const results = await query
         .between([userId, startStr], [userId, endStr])
         .toArray();
+
+      if (!isMounted) return;
       setLogs(results);
     } catch (error) {
       console.error("Error loading macro logs:", error);
     } finally {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     }
   }, [userId, startDate, endDate]);
 
   useEffect(() => {
-    loadLogs();
+    let isMounted = true;
+    loadLogs(isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [loadLogs]);
 
   return {
     logs,
     isLoading,
-    refresh: loadLogs,
+    refresh: () => loadLogs(true),
   };
 }

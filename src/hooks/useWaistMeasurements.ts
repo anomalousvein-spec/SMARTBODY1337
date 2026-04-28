@@ -16,7 +16,7 @@ export function useWaistMeasurements(
   const [measurements, setMeasurements] = useState<WaistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadMeasurements = useCallback(async () => {
+  const loadMeasurements = useCallback(async (isMounted: boolean) => {
     setIsLoading(true);
     try {
       let query = db.waist_measurements.where("[user_id+date]");
@@ -27,21 +27,29 @@ export function useWaistMeasurements(
       const results = await query
         .between([userId, startStr], [userId, endStr])
         .toArray();
+
+      if (!isMounted) return;
       setMeasurements(results);
     } catch (error) {
       console.error("Error loading waist measurements:", error);
     } finally {
-      setIsLoading(false);
+      if (isMounted) {
+        setIsLoading(false);
+      }
     }
   }, [userId, startDate, endDate]);
 
   useEffect(() => {
-    loadMeasurements();
+    let isMounted = true;
+    loadMeasurements(isMounted);
+    return () => {
+      isMounted = false;
+    };
   }, [loadMeasurements]);
 
   return {
     measurements,
     isLoading,
-    refresh: loadMeasurements,
+    refresh: () => loadMeasurements(true),
   };
 }

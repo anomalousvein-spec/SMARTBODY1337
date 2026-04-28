@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   Trash2,
   Shield,
@@ -8,6 +8,8 @@ import {
   Sun,
   Zap,
   AlertTriangle,
+  Download,
+  Upload,
 } from "lucide-react";
 import { Card } from "../../components";
 import { db } from "../../db/database";
@@ -21,6 +23,7 @@ import { motion } from "framer-motion";
  */
 export function SettingsPanel() {
   const { theme, setTheme } = useApp();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClearData = async () => {
     const confirmed = window.confirm(
@@ -40,6 +43,8 @@ export function SettingsPanel() {
         db.macro_logs.clear(),
         db.tdee_settings.clear(),
         db.pace_coach_checkins.clear(),
+        db.weekly_metrics.clear(),
+        db.user_profiles.clear(),
       ]);
       localStorage.clear();
       window.location.href = "/";
@@ -47,6 +52,85 @@ export function SettingsPanel() {
       console.error("Failed to clear data:", error);
       alert("An error occurred while clearing data. Please try again.");
     }
+  };
+
+  const handleExportData = async () => {
+    try {
+      const data = {
+        weights: await db.weights.toArray(),
+        waist: await db.waist_measurements.toArray(),
+        macros: await db.macro_logs.toArray(),
+        tdee: await db.tdee_settings.toArray(),
+        checkins: await db.pace_coach_checkins.toArray(),
+        metrics: await db.weekly_metrics.toArray(),
+        profiles: await db.user_profiles.toArray(),
+        version: APP_VERSION,
+        exportedAt: new Date().toISOString(),
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `smartbody_backup_${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to export data.");
+    }
+  };
+
+  const handleImportData = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const content = e.target?.result as string;
+        const data = JSON.parse(content);
+
+        const confirmed = window.confirm(
+          "This will overwrite existing data with the backup. Continue?",
+        );
+        if (!confirmed) return;
+
+        // Clear existing
+        await Promise.all([
+          db.weights.clear(),
+          db.waist_measurements.clear(),
+          db.macro_logs.clear(),
+          db.tdee_settings.clear(),
+          db.pace_coach_checkins.clear(),
+          db.weekly_metrics.clear(),
+          db.user_profiles.clear(),
+        ]);
+
+        // Bulk add new
+        if (data.weights) await db.weights.bulkAdd(data.weights);
+        if (data.waist) await db.waist_measurements.bulkAdd(data.waist);
+        if (data.macros) await db.macro_logs.bulkAdd(data.macros);
+        if (data.tdee) await db.tdee_settings.bulkAdd(data.tdee);
+        if (data.checkins)
+          await db.pace_coach_checkins.bulkAdd(data.checkins);
+        if (data.metrics) await db.weekly_metrics.bulkAdd(data.metrics);
+        if (data.profiles) await db.user_profiles.bulkAdd(data.profiles);
+
+        alert("Data imported successfully!");
+        window.location.reload();
+      } catch (error) {
+        console.error("Import failed:", error);
+        alert("Failed to import data. Ensure the file is a valid backup.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   const themes = [
@@ -128,6 +212,49 @@ export function SettingsPanel() {
           Data Management
         </h3>
 
+        <div className="grid grid-cols-2 gap-3">
+          <Card
+            onClick={handleExportData}
+            className="flex flex-col items-center justify-center gap-3 p-6 text-center cursor-pointer hover:bg-theme-accent/5 transition-colors border-white/5 group"
+          >
+            <div className="p-3 rounded-2xl bg-theme-accent/10 text-theme-accent group-hover:scale-110 transition-transform">
+              <Download className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-theme-text-primary uppercase tracking-tight">
+                Export
+              </p>
+              <p className="text-[9px] text-theme-text-tertiary uppercase font-black">
+                Save Backup
+              </p>
+            </div>
+          </Card>
+
+          <Card
+            onClick={() => fileInputRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-3 p-6 text-center cursor-pointer hover:bg-success/5 transition-colors border-white/5 group"
+          >
+            <div className="p-3 rounded-2xl bg-success/10 text-success group-hover:scale-110 transition-transform">
+              <Upload className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-theme-text-primary uppercase tracking-tight">
+                Import
+              </p>
+              <p className="text-[9px] text-theme-text-tertiary uppercase font-black">
+                Restore Data
+              </p>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImportData}
+              accept=".json"
+              className="hidden"
+            />
+          </Card>
+        </div>
+
         <Card className="flex items-center justify-between group overflow-hidden relative">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-red-500/10 text-red-500 group-hover:bg-red-500/20 transition-colors">
@@ -191,7 +318,7 @@ export function SettingsPanel() {
           <p className="text-[10px] text-orange-500/80 leading-relaxed font-bold uppercase tracking-wide">
             This app is a client-side PWA. Clearing your browser cache or
             deleting site data through browser settings may also erase your
-            logs. We recommend regular data exports (coming soon).
+            logs. Use the export tool above to keep regular backups.
           </p>
         </div>
 
