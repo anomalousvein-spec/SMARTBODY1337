@@ -35,6 +35,7 @@ export interface AdvancedMacroTargets {
   proteinMin: number;
   proteinMax: number;
   fatMin: number;
+  carbs: number;
   remainingCalories: number;
 }
 
@@ -127,13 +128,17 @@ export function calculateAdvancedMacros(
   // Calculate remaining calories after protein and fat floors
   const proteinCalories = proteinMin * 4; // 4 cal per gram
   const fatCalories = fatMin * 9; // 9 cal per gram
-  const remainingCalories = targetCalories - proteinCalories - fatCalories;
+  const remainingCalories = Math.max(targetCalories - proteinCalories - fatCalories, 0);
+
+  // Carbs: Allocate remaining calories to carbs
+  const carbs = remainingCalories / 4;
 
   return {
     proteinMin,
     proteinMax,
     fatMin,
-    remainingCalories: Math.max(remainingCalories, 0),
+    carbs,
+    remainingCalories: 0, // Now fully allocated to carbs
   };
 }
 

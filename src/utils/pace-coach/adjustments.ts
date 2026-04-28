@@ -83,13 +83,19 @@ export async function calculateEnhancedCheckInSuggestion(params: {
     currentWeight,
   } = params;
   const trend = await calculateTrendRateWithTier(userId, currentIsoWeek);
+
+  const bmrFloor = Math.max(
+    bmr || 0,
+    gender === "male" ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE,
+  );
+
   if (!trend.canCalculate)
     return {
       suggestedIntake: calculateSuggestedIntake({
         currentTDEE,
         goalLbsPerWeek: Math.abs(goalRateLbsPerWeek),
         lastSuggestedIntake: currentTarget,
-        bmr,
+        bmr: bmrFloor,
         gender,
         currentWeight,
       }),
@@ -110,7 +116,7 @@ export async function calculateEnhancedCheckInSuggestion(params: {
         currentTDEE,
         goalLbsPerWeek: Math.abs(goalRateLbsPerWeek),
         lastSuggestedIntake: currentTarget,
-        bmr,
+        bmr: bmrFloor,
         gender,
         currentWeight,
       }),
@@ -127,10 +133,7 @@ export async function calculateEnhancedCheckInSuggestion(params: {
     currentTarget,
   });
   let newTarget = currentTarget + adj.adjustmentKcal;
-  const bmrFloor = Math.max(
-    bmr || 0,
-    gender === "male" ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE,
-  );
+
   newTarget = Math.max(newTarget, bmrFloor);
   if (currentWeight && currentWeight > 0)
     newTarget = Math.max(
@@ -183,6 +186,13 @@ export async function processEnhancedCheckIn(
   const goalRate =
     profile?.goal_rate_lbs_per_week || settings.targetLossRate || -1;
   const gender = settings.gender || "female";
+
+  // Calculate specific BMR floor for this user
+  const bmrFloor = Math.max(
+    settings.tdee ? settings.tdee * 0.75 : 0, // Fallback if no specific BMR field
+    gender === "male" ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE,
+  );
+
   await db.weights.add({
     user_id: userId,
     date: new Date().toISOString(),
@@ -202,7 +212,7 @@ export async function processEnhancedCheckIn(
     });
     adjKcal = adj.adjustmentKcal;
     newTarget = currentTarget + adjKcal;
-    const bmrFloor = gender === "male" ? BMR_FLOOR_MALE : BMR_FLOOR_FEMALE;
+
     newTarget = Math.max(newTarget, bmrFloor);
     newTarget = Math.max(
       newTarget,
@@ -231,6 +241,7 @@ export async function processEnhancedCheckIn(
       currentTDEE: settings.tdee || 2000,
       goalLbsPerWeek: Math.abs(goalRate),
       lastSuggestedIntake: currentTarget,
+      bmr: bmrFloor,
       gender: settings.gender,
       currentWeight: data.weight,
     });

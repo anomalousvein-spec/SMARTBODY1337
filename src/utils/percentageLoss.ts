@@ -1,3 +1,4 @@
+import { KG_TO_LBS, LBS_TO_KG } from "../config/constants";
 /**
  * Calculate daily calorie deficit based on percentage of body weight loss per week
  */
@@ -115,9 +116,9 @@ export function calculatePercentageLoss(
 
   // Convert weight to both units for calculations
   const weightLbs =
-    weightUnit === "lbs" ? currentWeight : currentWeight * 2.20462262;
+    weightUnit === "lbs" ? currentWeight : currentWeight * KG_TO_LBS;
   const weightKg =
-    weightUnit === "kg" ? currentWeight : currentWeight * 0.45359237;
+    weightUnit === "kg" ? currentWeight : currentWeight * LBS_TO_KG;
 
   // Calculate weekly loss
   const weeklyLossLbs = weightLbs * (percentage / 100);
