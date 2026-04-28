@@ -24,6 +24,7 @@ export interface Metrics {
   paceCoachMaintenance?: number;
   paceCoachTarget?: number;
   hasPaceCoachData?: boolean;
+  checkInCount?: number;
 }
 
 /**
@@ -108,7 +109,8 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
       currentWeight: settings?.currentWeight,
       paceCoachMaintenance,
       paceCoachTarget,
-      hasPaceCoachData
+      hasPaceCoachData,
+      checkInCount
     };
   }, [weights, waist, macros, settings, isLoading, lastCheckIn, checkInCount]);
 
