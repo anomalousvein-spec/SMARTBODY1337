@@ -76,7 +76,7 @@ const SettingsPanel = lazy(() =>
 
 const LoadingFallback = () => (
   <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-    <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-600/20 border-t-blue-600"></div>
+    <div className="h-12 w-12 animate-spin rounded-full border-4 border-theme-accent/20 border-t-theme-accent"></div>
     <p className="animate-pulse text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">
       Loading SmartBody...
     </p>

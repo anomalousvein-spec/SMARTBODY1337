@@ -7,7 +7,7 @@ export interface InputFieldProps {
   /** Input type (text, number, date, etc.) */
   type: string;
   /** Current value of the input */
-  value: string;
+  value: string | number;
   /** Callback when value changes */
   onChange: (value: string) => void;
   /** Placeholder text */
@@ -83,14 +83,14 @@ export function InputField({
           "hover:border-white/20",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           error &&
-            "border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50",
+            "border-error/50 focus:ring-error/30 focus:border-error/50",
           type === "date" && "text-sm",
         )}
       />
       {error && (
         <p
           id={`${inputId}-error`}
-          className="mt-1.5 ml-1 text-[10px] font-bold text-red-400 uppercase tracking-wide"
+          className="mt-1.5 ml-1 text-[10px] font-bold text-error uppercase tracking-wide"
           role="alert"
         >
           {error}
@@ -263,9 +263,9 @@ export interface FormMessageProps {
  */
 export function FormMessage({ type, message }: FormMessageProps) {
   const styles = {
-    error: "bg-red-500/10 border border-red-500/20 text-red-400",
-    success: "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400",
-    info: "bg-blue-500/10 border border-blue-500/20 text-blue-400",
+    error: "bg-error/10 border border-error/20 text-error",
+    success: "bg-success/10 border border-success/20 text-success",
+    info: "bg-theme-accent/10 border border-theme-accent/20 text-theme-accent",
   };
 
   return (
