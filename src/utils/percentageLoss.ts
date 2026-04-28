@@ -26,6 +26,7 @@ export interface SliderZoneConfig {
   color: string;
   label: string;
   trackColorClass: string;
+  textColorClass: string;
 }
 
 export const SLIDER_ZONES: SliderZoneConfig[] = [
@@ -34,28 +35,32 @@ export const SLIDER_ZONES: SliderZoneConfig[] = [
     max: 0.49, 
     color: 'blue', 
     label: 'Conservative',
-    trackColorClass: 'bg-blue-500'
+    trackColorClass: 'bg-blue-500',
+    textColorClass: 'text-blue-400'
   },
   { 
     min: 0.5, 
     max: 0.75, 
     color: 'green', 
     label: 'Recommended',
-    trackColorClass: 'bg-green-500'
+    trackColorClass: 'bg-emerald-500',
+    textColorClass: 'text-success'
   },
   { 
-    min: 0.75, 
+    min: 0.751,
     max: 1.0, 
     color: 'yellow', 
     label: 'Aggressive',
-    trackColorClass: 'bg-yellow-500'
+    trackColorClass: 'bg-yellow-500',
+    textColorClass: 'text-warning'
   },
   { 
-    min: 1.0, 
+    min: 1.001,
     max: 1.5, 
     color: 'orange', 
     label: 'Not Recommended',
-    trackColorClass: 'bg-orange-500'
+    trackColorClass: 'bg-orange-500',
+    textColorClass: 'text-error'
   },
 ];
 
@@ -76,8 +81,12 @@ export interface PercentageLossResult {
  * Get the slider zone for a given percentage
  */
 export function getSliderZone(pct: number): SliderZoneConfig {
+  // Use a small epsilon for floating point comparison at boundaries
+  const epsilon = 0.0001;
+
+  // Find the zone where the percentage fits
   for (const zone of SLIDER_ZONES) {
-    if (pct >= zone.min && pct <= zone.max) {
+    if (pct >= zone.min - epsilon && pct <= zone.max + epsilon) {
       return zone;
     }
   }
@@ -128,14 +137,12 @@ export function calculatePercentageLoss(
     const maxSafeDeficit = tdee - effectiveBmrFloor;
     
     // Recalculate percentage from max safe deficit
-    // daily_deficit = (weight * (pct / 100) * cal_per_unit) / 7
-    // pct = (daily_deficit * 7) / (weight * cal_per_unit) * 100
     const weightForCalc = weightUnit === 'lbs' ? weightLbs : weightKg;
     const calPerUnit = weightUnit === 'lbs' ? CALORIES_PER_LB : CALORIES_PER_KG;
     
     safePercentage = ((maxSafeDeficit * 7) / (weightForCalc * calPerUnit)) * 100;
     
-    // Round down to nearest step (0.05)
+    // Round down to nearest step (0.05) to stay safe
     safePercentage = Math.floor(safePercentage * 20) / 20;
     
     // Ensure it's within bounds
@@ -147,7 +154,7 @@ export function calculatePercentageLoss(
   // Get zone info
   const zoneConfig = getSliderZone(percentage);
   
-  // Show protein nudge for aggressive zones (0.75% and above)
+  // Show protein nudge for 0.75% and above
   const showProteinNudge = percentage >= 0.75;
 
   return {
@@ -169,22 +176,18 @@ export function calculatePercentageLoss(
  */
 export function getDynamicLabelText(
   percentage: number,
-  weightLbs: number,
-  zone: SliderZone
+  weightLbs: number
 ): string {
   const weeklyLoss = weightLbs * (percentage / 100);
   
-  switch (zone) {
-    case 'conservative':
-      return `Slow & Steady — ${weeklyLoss.toFixed(1)} lb/week · Recommended for long-term results`;
-    case 'recommended':
-      return `Moderate — ${weeklyLoss.toFixed(1)} lb/week · Good sustainable pace`;
-    case 'aggressive':
-      return `Aggressive — ${weeklyLoss.toFixed(1)} lb/week · Upper safe limit`;
-    case 'notRecommended':
-      return `⚠️ Above Safe Limit — ${weeklyLoss.toFixed(1)} lb/week · Not recommended without medical supervision`;
-    default:
-      return `${weeklyLoss.toFixed(1)} lb/week`;
+  if (percentage < 0.5) {
+    return `Slow & Steady — ${weeklyLoss.toFixed(1)} lb/week · Recommended for long-term results`;
+  } else if (percentage <= 0.75) {
+    return `Moderate — ${weeklyLoss.toFixed(1)} lb/week · Good sustainable pace`;
+  } else if (percentage <= 1.0) {
+    return `Aggressive — ${weeklyLoss.toFixed(1)} lb/week · Upper safe limit`;
+  } else {
+    return `⚠️ Above Safe Limit — ${weeklyLoss.toFixed(1)} lb/week · Not recommended without medical supervision`;
   }
 }
 
@@ -198,7 +201,7 @@ export function isVeryHeavyUser(weightLbs: number): boolean {
 /**
  * Get special message for very heavy users
  */
-export function getHeavyUserMessage(weightLbs: number, percentage: number): string | null {
+export function getHeavyUserMessage(weightLbs: number): string | null {
   if (isVeryHeavyUser(weightLbs)) {
     return `At your current weight, this is a safe and well-supported target.`;
   }

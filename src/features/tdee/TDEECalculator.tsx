@@ -8,7 +8,8 @@ import {
   MAX_AGE,
   LBS_TO_KG,
   INCHES_TO_CM,
-  KG_TO_LBS
+  KG_TO_LBS,
+  CM_TO_IN
 } from '../../config/constants';
 import {
   calculateBMR,
@@ -24,7 +25,7 @@ import { useApp } from '../../context/AppContext';
 import { PaceCoachSettings } from '../pace-coach/PaceCoachSettings';
 import { StandardResultsView } from './components/StandardResultsView';
 import { AdvancedResultsView } from './components/AdvancedResultsView';
-import { SLIDER_CONFIG } from '../../utils/percentageLoss';
+import { SLIDER_CONFIG, calculatePercentageLoss } from '../../utils/percentageLoss';
 
 const ACTIVITY_LEVELS = [
   { value: 'sedentary', label: 'Sedentary (Little/No Exercise)' },
@@ -63,14 +64,15 @@ export function TDEECalculator() {
   const [macroTargets, setMacroTargets] = useState<AdvancedMacroTargets | null>(null);
   
   // Compute BMR and TDEE in real-time for the slider preview
-  const liveWeight = weight ? parseFloat(weight) : 0;
-  const liveWeightKg = weightUnit === 'lbs' ? liveWeight * LBS_TO_KG : liveWeight;
-  const liveHeightCm = heightUnit === 'in' ? parseFloat(height || '0') * INCHES_TO_CM : parseFloat(height || '0');
+  const liveWeightValue = weight ? parseFloat(weight) : 0;
+  const liveWeightKg = weightUnit === 'lbs' ? liveWeightValue * LBS_TO_KG : liveWeightValue;
+  const liveHeightValue = height ? parseFloat(height) : 0;
+  const liveHeightCm = heightUnit === 'in' ? liveHeightValue * INCHES_TO_CM : liveHeightValue;
   
   let liveBmr = results?.bmr || (gender === 'male' ? 1500 : 1200);
   let liveTdee = results?.tdee || 2000;
   
-  if (liveWeight > 0 && liveHeightCm > 0 && age) {
+  if (liveWeightValue > 0 && liveHeightValue > 0 && age) {
     const ageValue = parseInt(age);
     if (useAdvancedMode && waist && neck) {
       const waistCm = measurementUnit === 'in' ? parseFloat(waist) * INCHES_TO_CM : parseFloat(waist);
@@ -93,10 +95,9 @@ export function TDEECalculator() {
       setHeight(fullSettings.height.toString());
       setHeightUnit(fullSettings.heightUnit);
       setWeight(fullSettings.currentWeight?.toString() || '');
-      setWeightUnit(fullSettings.heightUnit === 'in' ? 'lbs' : 'kg'); // Sync with height unit preference for consistency
+      setWeightUnit(fullSettings.heightUnit === 'in' ? 'lbs' : 'kg');
       setActivityLevel(fullSettings.activityLevel);
       setTargetWeight(fullSettings.targetWeight?.toString() || '');
-      // Use percentage from settings, or default to 0.75%
       const savedPercentage = fullSettings.targetLossRate ?? SLIDER_CONFIG.default;
       setTargetLossRate(savedPercentage.toString());
 
@@ -143,10 +144,17 @@ export function TDEECalculator() {
   const handleHeightUnitChange = (unit: string) => {
     const val = parseFloat(height);
     if (!isNaN(val)) {
-      setHeight(unit === 'cm' ? (val * INCHES_TO_CM).toFixed(1) : (val / INCHES_TO_CM).toFixed(1));
+      setHeight(unit === 'cm' ? (val * INCHES_TO_CM).toFixed(1) : (val * CM_TO_IN).toFixed(1));
     }
     setHeightUnit(unit as 'in' | 'cm');
-    setWeightUnit(unit === 'in' ? 'lbs' : 'kg');
+  };
+
+  const handleWeightUnitChange = (unit: string) => {
+    const val = parseFloat(weight);
+    if (!isNaN(val)) {
+      setWeight(unit === 'kg' ? (val * LBS_TO_KG).toFixed(1) : (val * KG_TO_LBS).toFixed(1));
+    }
+    setWeightUnit(unit as 'lbs' | 'kg');
   };
 
   const handleMeasurementUnitChange = (unit: string) => {
@@ -155,13 +163,13 @@ export function TDEECalculator() {
     const hipVal = parseFloat(hip);
     
     if (!isNaN(waistVal)) {
-      setWaist(unit === 'cm' ? (waistVal * INCHES_TO_CM).toFixed(1) : (waistVal / INCHES_TO_CM).toFixed(1));
+      setWaist(unit === 'cm' ? (waistVal * INCHES_TO_CM).toFixed(1) : (waistVal * CM_TO_IN).toFixed(1));
     }
     if (!isNaN(neckVal)) {
-      setNeck(unit === 'cm' ? (neckVal * INCHES_TO_CM).toFixed(1) : (neckVal / INCHES_TO_CM).toFixed(1));
+      setNeck(unit === 'cm' ? (neckVal * INCHES_TO_CM).toFixed(1) : (neckVal * CM_TO_IN).toFixed(1));
     }
     if (!isNaN(hipVal)) {
-      setHip(unit === 'cm' ? (hipVal * INCHES_TO_CM).toFixed(1) : (hipVal / INCHES_TO_CM).toFixed(1));
+      setHip(unit === 'cm' ? (hipVal * INCHES_TO_CM).toFixed(1) : (hipVal * CM_TO_IN).toFixed(1));
     }
     setMeasurementUnit(unit as 'in' | 'cm');
   };
@@ -222,11 +230,16 @@ export function TDEECalculator() {
 
       const tdee = calculateTDEE(bmr, activityLevel);
       
-      // Calculate calorie deficit using percentage-based formula
-      const weightForCalc = weightUnit === 'lbs' ? weightValue : weightValue * LBS_TO_KG;
-      const caloriesPerUnit = weightUnit === 'lbs' ? 3500 : 7700;
-      const dailyDeficit = (weightForCalc * (targetLossRateValue / 100) * caloriesPerUnit) / 7;
-      const targetCalories = Math.round(tdee - dailyDeficit);
+      // Use the utility for calorie math consistency
+      const lossResults = calculatePercentageLoss(
+        weightValue,
+        weightUnit,
+        targetLossRateValue,
+        tdee,
+        bmr,
+        gender
+      );
+      const targetCalories = Math.round(lossResults.proposedIntake);
 
       let macroTargetsResult: AdvancedMacroTargets | null = null;
       if (advResults && useAdvancedMode) {
@@ -318,7 +331,7 @@ export function TDEECalculator() {
 
         <div className="grid grid-cols-2 gap-4">
           <InputField label="Current Weight" type="number" value={weight} onChange={setWeight} step="0.1" required />
-          <SelectField label="Unit" value={weightUnit} onChange={(val) => setWeightUnit(val as 'lbs' | 'kg')} options={[{ value: 'lbs', label: 'lbs' }, { value: 'kg', label: 'kg' }]} />
+          <SelectField label="Unit" value={weightUnit} onChange={handleWeightUnitChange} options={[{ value: 'lbs', label: 'lbs' }, { value: 'kg', label: 'kg' }]} />
         </div>
 
         <SelectField label="Activity Level" value={activityLevel} onChange={(val) => setActivityLevel(val as TDEESettings['activityLevel'])} options={ACTIVITY_LEVELS} />
