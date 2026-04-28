@@ -35,6 +35,15 @@ export const RAPID_LOSS_THRESHOLD_LBS_PER_WEEK = 2.5;
 export const STALL_DETECTION_DAYS = 14;
 export const STALL_THRESHOLD_LBS = 0.5;
 
+// Pace Coach Constants
+export const PACE_COACH_ADJUSTMENT_STEP = 75;
+export const PACE_COACH_MAX_ADJUSTMENT_STEP = 150;
+export const PACE_COACH_COMPLIANCE_THRESHOLD = 0.8;
+export const PACE_COACH_MIN_LOGGED_DAYS = 4;
+export const PACE_COACH_DATA_GAP_DAYS = 10;
+export const PACE_COACH_RATE_TOLERANCE_LBS = 0.3;
+export const PACE_COACH_LOW_COMPLIANCE_THRESHOLD = 0.5;
+
 // Validation Ranges
 export const MIN_AGE = 13;
 export const MAX_AGE = 120;
