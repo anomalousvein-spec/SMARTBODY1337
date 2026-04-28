@@ -1,10 +1,11 @@
 import { useCallback, useMemo } from 'react';
 import { WeightEntry, WaistEntry, MacroEntry } from '../db/models';
-import { DEFAULT_USER_ID, INCHES_TO_CM, DEFAULT_MAINTENANCE_CALORIES, DEFAULT_CUTTING_CALORIES } from '../config/constants';
+import { DEFAULT_USER_ID, INCHES_TO_CM, DEFAULT_MAINTENANCE_CALORIES, DEFAULT_CUTTING_CALORIES, MIN_CHECKINS_FOR_METABOLISM } from '../config/constants';
 import { useWeights } from './useWeights';
 import { useWaistMeasurements } from './useWaistMeasurements';
 import { useMacroLogs } from './useMacroLogs';
 import { useTDEESettings } from './useTDEESettings';
+import { usePaceCoach } from './usePaceCoach';
 
 export interface Metrics {
   latestWeight: WeightEntry | null;
@@ -19,6 +20,10 @@ export interface Metrics {
   targetWeight?: number;
   targetLossRate?: number;
   currentWeight?: number;
+  // Pace Coach calculated values (when available)
+  paceCoachMaintenance?: number;
+  paceCoachTarget?: number;
+  hasPaceCoachData?: boolean;
 }
 
 /**
@@ -30,6 +35,7 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
   const { measurements: waist, isLoading: waistLoading, refresh: refreshWaist } = useWaistMeasurements(userId);
   const { logs: macros, isLoading: macrosLoading, refresh: refreshMacros } = useMacroLogs(userId);
   const { settings, isLoading: settingsLoading, refresh: refreshSettings, error: settingsError } = useTDEESettings(userId);
+  const { lastCheckIn, checkInCount } = usePaceCoach(userId);
 
   const isLoading = weightsLoading || waistLoading || macrosLoading || settingsLoading;
 
@@ -82,6 +88,11 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
       ? Math.round(recentMacros.reduce((sum: number, m: MacroEntry) => sum + m.protein, 0) / recentMacros.length)
       : 0;
 
+    // Pace Coach calculated values (when sufficient data exists)
+    const hasPaceCoachData = settings?.paceCoachEnabled && checkInCount >= MIN_CHECKINS_FOR_METABOLISM && lastCheckIn != null;
+    const paceCoachMaintenance = hasPaceCoachData ? lastCheckIn!.calculatedTDEE : undefined;
+    const paceCoachTarget = hasPaceCoachData ? settings.lastSuggestedIntake : undefined;
+
     return {
       latestWeight,
       latestWaist,
@@ -94,9 +105,12 @@ export function useMetrics(userId: string = DEFAULT_USER_ID) {
       weeklyAvgProtein,
       targetWeight: settings?.targetWeight,
       targetLossRate: settings?.targetLossRate,
-      currentWeight: settings?.currentWeight
+      currentWeight: settings?.currentWeight,
+      paceCoachMaintenance,
+      paceCoachTarget,
+      hasPaceCoachData
     };
-  }, [weights, waist, macros, settings, isLoading]);
+  }, [weights, waist, macros, settings, isLoading, lastCheckIn, checkInCount]);
 
   return { metrics, isLoading, error: settingsError, refresh };
 }

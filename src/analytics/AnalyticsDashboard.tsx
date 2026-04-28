@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useMetrics } from '../hooks/useMetrics';
-import { PaceCoachCard, CheckInIndicator } from '../features/pace-coach';
+import { PaceCoachCard, CheckInIndicator, PaceCoachRecommendations } from '../features/pace-coach';
 import { db } from '../db/database';
 import { WAIST_RATIO_DISPLAY_CATEGORIES } from '../config/constants';
 import { Skeleton, CardSkeleton } from '../components';
@@ -169,6 +169,9 @@ export function AnalyticsDashboard() {
       >
         <PaceCoachCard />
       </motion.div>
+
+      {/* Pace Coach Recommendations (when sufficient data exists) */}
+      <PaceCoachRecommendations metrics={metrics} />
 
       {/* Calorie Summary */}
       <CalorieOverview metrics={metrics} />
