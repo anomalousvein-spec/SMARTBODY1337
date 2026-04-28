@@ -325,3 +325,7 @@ export function SubmitButton({
     </button>
   );
 }
+
+// Re-export PercentageLossSlider
+export { PercentageLossSlider } from './PercentageLossSlider';
+export type { PercentageLossSliderProps } from './PercentageLossSlider';
