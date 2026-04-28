@@ -2,7 +2,7 @@ import {
   WAIST_RATIO_CATEGORIES,
   ACTIVITY_MULTIPLIERS,
   INCHES_TO_CM,
-  LBS_TO_KG,
+
   KG_TO_LBS
 } from '../config/constants';
 
