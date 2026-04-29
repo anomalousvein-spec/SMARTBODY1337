@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: verify_settings.spec.ts >> Settings page shows export/import buttons and theme options
-- Location: verify_settings.spec.ts:3:1
+- Name: verify_tdee_ui.spec.ts >> TDEE Calculator UI should load and toggle modes
+- Location: verify_tdee_ui.spec.ts:3:1
 
 # Error details
 
