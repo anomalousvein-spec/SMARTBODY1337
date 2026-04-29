@@ -1,6 +1,6 @@
-import React, { memo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2, X } from "lucide-react";
 import { Card } from "../../components";
 
 interface QuickLogSectionProps {
@@ -13,7 +13,7 @@ interface QuickLogSectionProps {
   onNavigateMacros: () => void;
 }
 
-export const QuickLogSection = memo(
+export const QuickLogSection = React.memo(
   ({
     quickLogType,
     setQuickLogType,
@@ -24,22 +24,22 @@ export const QuickLogSection = memo(
     onNavigateMacros,
   }: QuickLogSectionProps) => {
     const [showSuccess, setShowSuccess] = useState(false);
-    const [lastSavedType, setLastSavedType] = useState<string | null>(null);
 
-    // Show success feedback when saving finishes and quickLogType is cleared
     useEffect(() => {
-      if (!isSaving && !quickLogType && lastSavedType) {
-        setShowSuccess(true);
-        const timer = setTimeout(() => {
-          setShowSuccess(false);
-          setLastSavedType(null);
-        }, 2500);
+      if (showSuccess) {
+        const timer = setTimeout(() => setShowSuccess(false), 3000);
         return () => clearTimeout(timer);
       }
-      if (isSaving && quickLogType) {
-        setLastSavedType(quickLogType);
+    }, [showSuccess]);
+
+    // Track the success state when quickLogType becomes null after a save
+    const [prevIsSaving, setPrevIsSaving] = useState(false);
+    useEffect(() => {
+      if (prevIsSaving && !isSaving && !quickLogType) {
+        setShowSuccess(true);
       }
-    }, [isSaving, quickLogType, lastSavedType]);
+      setPrevIsSaving(isSaving);
+    }, [isSaving, quickLogType, prevIsSaving]);
 
     return (
       <motion.div
@@ -47,9 +47,9 @@ export const QuickLogSection = memo(
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Card className="card-hover overflow-hidden relative">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-theme-text-primary tracking-tight">
+        <Card className="relative">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-sm font-black uppercase tracking-widest text-theme-text-tertiary">
               Quick Log
             </h3>
             <AnimatePresence>
@@ -58,7 +58,7 @@ export const QuickLogSection = memo(
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="flex items-center gap-1.5 text-green-500"
+                  className="flex items-center gap-1.5 text-success"
                 >
                   <CheckCircle className="w-4 h-4" />
                   <span className="text-[10px] font-black uppercase tracking-widest">
@@ -81,25 +81,25 @@ export const QuickLogSection = memo(
                 >
                   <button
                     onClick={() => setQuickLogType("weight")}
-                    className="p-3 bg-theme-accent/10 hover:bg-theme-accent/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1"
+                    className="p-4 bg-theme-accent/10 hover:bg-theme-accent/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1 group border border-theme-accent/10 hover:border-theme-accent/30"
                   >
-                    <span className="text-sm font-bold text-theme-accent uppercase tracking-wide">
+                    <span className="text-xs font-black text-theme-accent uppercase tracking-widest group-hover:scale-105 transition-transform">
                       Weight
                     </span>
                   </button>
                   <button
                     onClick={() => setQuickLogType("waist")}
-                    className="p-3 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1"
+                    className="p-4 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1 group border border-purple-500/10 hover:border-purple-500/30"
                   >
-                    <span className="text-sm font-bold text-purple-400 uppercase tracking-wide">
+                    <span className="text-xs font-black text-purple-400 uppercase tracking-widest group-hover:scale-105 transition-transform">
                       Waist
                     </span>
                   </button>
                   <button
                     onClick={onNavigateMacros}
-                    className="p-3 bg-green-500/10 hover:bg-green-500/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1"
+                    className="p-4 bg-success/10 hover:bg-success/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1 group border border-success/10 hover:border-success/30"
                   >
-                    <span className="text-sm font-bold text-green-400 uppercase tracking-wide">
+                    <span className="text-xs font-black text-success uppercase tracking-widest group-hover:scale-105 transition-transform">
                       Macros
                     </span>
                   </button>
@@ -130,6 +130,7 @@ export const QuickLogSection = memo(
                       type="submit"
                       disabled={isSaving || !quickLogValue}
                       className="p-3 bg-theme-accent hover:bg-theme-accent/90 disabled:opacity-50 text-white rounded-xl transition-all duration-200 active:scale-90 shadow-lg shadow-theme-accent/25 hover:shadow-xl hover:shadow-theme-accent/30"
+                      aria-label="Submit quick log"
                     >
                       {isSaving ? (
                         <Loader2 className="w-6 h-6 animate-spin" />
@@ -143,9 +144,10 @@ export const QuickLogSection = memo(
                         setQuickLogType(null);
                         setQuickLogValue("");
                       }}
-                      className="p-3 bg-theme-bg-tertiary hover:bg-theme-bg-tertiary/80 text-theme-text-secondary rounded-xl transition-all duration-200 hover:text-theme-text-primary"
+                      className="p-3 bg-theme-bg-tertiary/60 hover:bg-theme-bg-tertiary text-theme-text-tertiary hover:text-theme-text-primary rounded-xl transition-all duration-200 active:scale-90 border border-white/5"
+                      aria-label="Cancel quick log"
                     >
-                      ✕
+                      <X className="w-6 h-6" />
                     </button>
                   </div>
                 </motion.form>

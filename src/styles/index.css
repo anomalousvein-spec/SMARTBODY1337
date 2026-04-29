@@ -118,6 +118,7 @@ body {
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid var(--accent);
+  box-shadow: 0 0 0 4px var(--color-blue-glow);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -128,6 +129,7 @@ a:focus-visible {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
 }
 
 :root[data-theme='jewel'] .glass {
@@ -189,4 +191,12 @@ a:focus-visible {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+}
+
+.smooth-scale {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-scale:active {
+  transform: scale(0.98);
 }

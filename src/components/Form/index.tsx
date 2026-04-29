@@ -346,6 +346,36 @@ export function SubmitButton({
   );
 }
 
+export interface SecondaryButtonProps {
+  onClick: () => void;
+  label: string;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  className?: string;
+}
+
+export function SecondaryButton({
+  onClick,
+  label,
+  type = "button",
+  disabled = false,
+  className,
+}: SecondaryButtonProps) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "px-4 py-2 rounded-xl bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary hover:text-theme-text-primary transition-all duration-200 font-bold uppercase text-[10px] tracking-widest active:scale-95 disabled:opacity-50",
+        className
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 // Re-export PercentageLossSlider
 export { PercentageLossSlider } from "./PercentageLossSlider";
 export type { PercentageLossSliderProps } from "./PercentageLossSlider";
