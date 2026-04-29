@@ -1,376 +1,383 @@
-diff --git a/my_changes.diff b/my_changes.diff
-index 933c60a..e69de29 100644
---- a/my_changes.diff
-+++ b/my_changes.diff
-@@ -1,371 +0,0 @@
--diff --git a/src/App.tsx b/src/App.tsx
--index cbfc557..79bd452 100644
----- a/src/App.tsx
--+++ b/src/App.tsx
--@@ -88,7 +88,7 @@ function App() {
--     window.matchMedia('(display-mode: standalone)').matches ||
--     (window.navigator as NavigatorWithStandalone).standalone === true
--   );
---  const [currentUserId, setCurrentUserId] = useState<string>(() => {
--+  const [currentUserId] = useState<string>(() => {
--     // Get current user from UserManager or use default for backward compatibility
--     const user = userManager.getCurrentUser();
--     return user?.id || 'user-1';
--diff --git a/src/analytics/AnalyticsDashboard.tsx b/src/analytics/AnalyticsDashboard.tsx
--index 48d4289..78d8bd9 100644
----- a/src/analytics/AnalyticsDashboard.tsx
--+++ b/src/analytics/AnalyticsDashboard.tsx
--@@ -10,16 +10,21 @@ import { useNavigate } from 'react-router-dom';
-- import { useMetrics } from '../hooks/useMetrics';
-- import { PaceCoachCard } from '../features/pace-coach';
-- import { db } from '../db/database';
---import { DEFAULT_USER_ID, WAIST_RATIO_DISPLAY_CATEGORIES } from '../config/constants';
--+import { WAIST_RATIO_DISPLAY_CATEGORIES } from '../config/constants';
-- import { Skeleton, CardSkeleton } from '../components';
-- import { CalorieOverview, WeeklyAverages, QuickLogSection } from './components';
--
--+interface AnalyticsDashboardProps {
--+  userId: string;
--+}
--+
-- /**
--  * Main dashboard component providing a high-level overview of all metrics.
--  * Refactored for performance via component extraction and memoization.
--+ * Now correctly accepts userId as a prop for future-proofing multi-user support.
--  */
---export function AnalyticsDashboard() {
---  const { metrics, isLoading, error: metricsError, refresh: loadData } = useMetrics(DEFAULT_USER_ID);
--+export function AnalyticsDashboard({ userId }: AnalyticsDashboardProps) {
--+  const { metrics, isLoading, error: metricsError, refresh: loadData } = useMetrics(userId);
--   const [quickLogType, setQuickLogType] = useState<'weight' | 'waist' | null>(null);
--   const [quickLogValue, setQuickLogValue] = useState('');
--   const [isSaving, setIsSaving] = useState(false);
--@@ -39,14 +44,14 @@ export function AnalyticsDashboard() {
--
--       if (quickLogType === 'weight') {
--         await db.weights.add({
---          user_id: DEFAULT_USER_ID,
--+          user_id: userId,
--           date: today,
--           weight: val,
--           unit: 'lbs'
--         });
--       } else {
--         await db.waist_measurements.add({
---          user_id: DEFAULT_USER_ID,
--+          user_id: userId,
--           date: today,
--           measurement: val,
--           unit: 'in'
--@@ -61,7 +66,7 @@ export function AnalyticsDashboard() {
--     } finally {
--       setIsSaving(false);
--     }
---  }, [quickLogType, quickLogValue, loadData]);
--+  }, [quickLogType, quickLogValue, loadData, userId]);
--
--   const handleNavigateMacros = useCallback(() => {
--     navigate('/macros');
--@@ -158,7 +163,7 @@ export function AnalyticsDashboard() {
--         animate={{ opacity: 1, y: 0 }}
--         transition={{ delay: 0.15 }}
--       >
---        <PaceCoachCard userId={DEFAULT_USER_ID} />
--+        <PaceCoachCard userId={userId} />
--       </motion.div>
--
--       {/* Calorie Summary */}
--diff --git a/src/components/Card.tsx b/src/components/Card.tsx
--new file mode 100644
--index 0000000..8ee98b0
----- /dev/null
--+++ b/src/components/Card.tsx
--@@ -0,0 +1,27 @@
--+import React from 'react';
--+import { cn } from '../utils/ui';
--+
--+interface CardProps {
--+  children: React.ReactNode;
--+  className?: string;
--+  onClick?: () => void;
--+}
--+
--+/**
--+ * Reusable Card component with glassmorphism styles
--+ * Matches the design system used in SmartBody1337
--+ */
--+export function Card({ children, className, onClick }: CardProps) {
--+  return (
--+    <div
--+      onClick={onClick}
--+      className={cn(
--+        "glass rounded-2xl p-5 shadow-xl border border-white/5",
--+        onClick && "cursor-pointer active:scale-[0.98] transition-transform",
--+        className
--+      )}
--+    >
--+      {children}
--+    </div>
--+  );
--+}
--diff --git a/src/components/index.ts b/src/components/index.ts
--index b8e38f4..4bde5e8 100644
----- a/src/components/index.ts
--+++ b/src/components/index.ts
--@@ -1,4 +1,5 @@
-- export { RecommendationCard } from './RecommendationCard';
-- export { AlertBanner } from './AlertBanner';
-- export { AdjustmentSuggestions } from './AdjustmentSuggestions';
--+export { Card } from './Card';
-- export * from './Skeleton';
--diff --git a/src/components/layout/AnimatedNav.tsx b/src/components/layout/AnimatedNav.tsx
--index 1a54634..2c0f756 100644
----- a/src/components/layout/AnimatedNav.tsx
--+++ b/src/components/layout/AnimatedNav.tsx
--@@ -1,6 +1,6 @@
-- import React from 'react';
-- import { Link, useLocation } from 'react-router-dom';
---import { Home, Scale, Ruler, Calculator, Utensils } from 'lucide-react';
--+import { Home, Scale, Ruler, Calculator, Utensils, Settings } from 'lucide-react';
-- import { cn } from '../../utils/ui';
--
-- interface AnimatedNavProps {
--@@ -8,16 +8,17 @@ interface AnimatedNavProps {
-- }
--
-- const navItems = [
---  { path: '/', icon: Home, label: 'Dashboard', ariaLabel: 'Navigate to Dashboard' },
--+  { path: '/', icon: Home, label: 'Dash', ariaLabel: 'Navigate to Dashboard' },
--   { path: '/weight', icon: Scale, label: 'Weight', ariaLabel: 'Navigate to Weight tracking' },
--   { path: '/waist', icon: Ruler, label: 'Waist', ariaLabel: 'Navigate to Waist measurements' },
---  { path: '/tdee', icon: Calculator, label: 'TDEE', ariaLabel: 'Navigate to TDEE calculator' },
--   { path: '/macros', icon: Utensils, label: 'Macros', ariaLabel: 'Navigate to Macros logger' },
--+  { path: '/tdee', icon: Calculator, label: 'TDEE', ariaLabel: 'Navigate to TDEE calculator' },
--+  { path: '/settings', icon: Settings, label: 'Settings', ariaLabel: 'Navigate to Settings' },
-- ] as const;
--
-- /**
--  * Animated bottom navigation bar with smooth transitions
--- * Features 5 tabs: Dashboard, Weight, Waist, TDEE, and Macros
--+ * Features 6 tabs: Dash, Weight, Waist, Macros, TDEE, and Settings
--  * @param isStandalone - Whether the app is running in standalone PWA mode
--  */
-- export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
--@@ -50,8 +51,8 @@ export default function AnimatedNav({ isStandalone }: AnimatedNavProps) {
--               aria-label={item.ariaLabel}
--               aria-current={isActive ? 'page' : undefined}
--             >
---              <Icon className="w-5 h-5" aria-hidden="true" />
---              <span className="text-[10px] font-medium mt-1">{item.label}</span>
--+              <Icon className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
--+              <span className="text-[9px] md:text-[10px] font-medium mt-1">{item.label}</span>
--             </Link>
--           );
--         })}
--diff --git a/src/features/settings/SettingsPanel.tsx b/src/features/settings/SettingsPanel.tsx
--new file mode 100644
--index 0000000..4fb8bb6
----- /dev/null
--+++ b/src/features/settings/SettingsPanel.tsx
--@@ -0,0 +1,111 @@
--+import React from 'react';
--+import { Trash2, Shield, Info, Database } from 'lucide-react';
--+import { Card } from '../../components';
--+import { db } from '../../db/database';
--+import { APP_VERSION } from '../../config/constants';
--+
--+/**
--+ * SettingsPanel provides administrative controls and app information.
--+ * Refactored to match the app's visual style and architecture.
--+ */
--+export function SettingsPanel() {
--+  const handleClearData = async () => {
--+    if (window.confirm('Are you sure you want to delete all your data? This cannot be undone.')) {
--+      try {
--+        await Promise.all([
--+          db.weights.clear(),
--+          db.waist_measurements.clear(),
--+          db.macro_logs.clear(),
--+          db.tdee_settings.clear(),
--+          db.pace_coach_checkins.clear()
--+        ]);
--+        localStorage.clear();
--+        window.location.reload();
--+      } catch (error) {
--+        console.error('Failed to clear data:', error);
--+        alert('Failed to clear data. Please try again.');
--+      }
--+    }
--+  };
--+
--+  return (
--+    <div className="space-y-6">
--+      <div className="flex flex-col gap-1">
--+        <h2 className="text-2xl font-black uppercase tracking-tight text-theme-text-primary">
--+          Settings
--+        </h2>
--+        <p className="text-xs font-bold uppercase tracking-widest text-theme-text-tertiary">
--+          Configure your experience
--+        </p>
--+      </div>
--+
--+      <section className="space-y-4">
--+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-text-tertiary px-1">
--+          Data Management
--+        </h3>
--+
--+        <Card className="flex items-center justify-between group">
--+          <div className="flex items-center gap-3">
--+            <div className="p-2 rounded-xl bg-red-500/10 text-red-500 group-hover:bg-red-500/20 transition-colors">
--+              <Trash2 className="w-5 h-5" />
--+            </div>
--+            <div>
--+              <p className="text-sm font-bold text-theme-text-primary">Clear Local Data</p>
--+              <p className="text-[10px] text-theme-text-tertiary">Permanently delete all logs and settings</p>
--+            </div>
--+          </div>
--+          <button
--+            onClick={handleClearData}
--+            className="text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95"
--+          >
--+            Clear
--+          </button>
--+        </Card>
--+
--+        <Card className="flex items-center gap-3">
--+          <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
--+            <Database className="w-5 h-5" />
--+          </div>
--+          <div>
--+            <p className="text-sm font-bold text-theme-text-primary">Local Storage Only</p>
--+            <p className="text-[10px] text-theme-text-tertiary">All your health data stays on this device</p>
--+          </div>
--+        </Card>
--+      </section>
--+
--+      <section className="space-y-4">
--+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-text-tertiary px-1">
--+          Privacy & Security
--+        </h3>
--+
--+        <Card className="flex items-center gap-3">
--+          <div className="p-2 rounded-xl bg-green-500/10 text-green-500">
--+            <Shield className="w-5 h-5" />
--+          </div>
--+          <div>
--+            <p className="text-sm font-bold text-theme-text-primary">Private by Design</p>
--+            <p className="text-[10px] text-theme-text-tertiary">No tracking or external data processing</p>
--+          </div>
--+        </Card>
--+      </section>
--+
--+      <section className="space-y-4">
--+        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-theme-text-tertiary px-1">
--+          About
--+        </h3>
--+
--+        <Card className="flex items-center gap-3">
--+          <div className="p-2 rounded-xl bg-theme-accent/10 text-theme-accent">
--+            <Info className="w-5 h-5" />
--+          </div>
--+          <div>
--+            <p className="text-sm font-bold text-theme-text-primary uppercase tracking-wider">
--+              SmartBody<span className="text-theme-accent">1337</span>
--+            </p>
--+            <p className="text-[10px] text-theme-text-tertiary">Version {APP_VERSION}</p>
--+          </div>
--+        </Card>
--+      </section>
--+    </div>
--+  );
--+}
--diff --git a/src/features/weight/WeightLogger.tsx b/src/features/weight/WeightLogger.tsx
--index 6f2a16f..a28919c 100644
----- a/src/features/weight/WeightLogger.tsx
--+++ b/src/features/weight/WeightLogger.tsx
--@@ -1,7 +1,7 @@
-- import React, { useState, useCallback } from 'react';
-- import { db } from '../../db/database';
-- import { WeightEntry } from '../../db/models';
---import { formatDateForInput, toISODate } from '../../utils/dates';
--+import { formatDateForInput } from '../../utils/dates';
-- import { InputField, SelectField, TextAreaField, FormMessage, SubmitButton } from '../../components/Form';
-- import { validateWeight } from '../../utils/validation';
-- import { sanitizeInput } from '../../utils/sanitize';
--@@ -72,31 +72,7 @@ export function WeightLogger({ userId, onWeightLogged }: WeightLoggerProps) {
--     }
--   }, [userId, weight, date, unit, notes, onWeightLogged, editingId]);
--
---  const handleEdit = useCallback(async (entry: WeightEntry) => {
---    setEditingId(entry.id || null);
---    setWeight(entry.weight.toString());
---    setDate(formatDateForInput(new Date(entry.date)));
---    setUnit(entry.unit);
---    setNotes(entry.notes || '');
---    setError(null);
---    setSuccess(false);
---  }, []);
--
---  const handleDelete = useCallback(async (id: number) => {
---    if (!window.confirm('Are you sure you want to delete this weight entry?')) {
---      return;
---    }
---
---    try {
---      await db.weights.delete(id);
---      setSuccess(true);
---      onWeightLogged?.();
---    } catch (err) {
---      const errorMessage = err instanceof Error ? err.message : 'Failed to delete weight entry';
---      setError(errorMessage);
---      console.error('Error deleting weight:', err);
---    }
---  }, [onWeightLogged]);
--
--   const handleCancelEdit = useCallback(() => {
--     setEditingId(null);
--diff --git a/src/utils/userManager.ts b/src/utils/userManager.ts
--new file mode 100644
--index 0000000..71bc0d3
----- /dev/null
--+++ b/src/utils/userManager.ts
--@@ -0,0 +1,39 @@
--+import { USER_STORAGE_KEY, DEFAULT_USER_ID } from '../config/constants';
--+
--+export interface User {
--+  id: string;
--+  name?: string;
--+}
--+
--+/**
--+ * Utility for managing user sessions and local storage persistence.
--+ */
--+export const userManager = {
--+  /**
--+   * Retrieves the current user from local storage or returns the default user.
--+   */
--+  getCurrentUser: (): User => {
--+    const stored = localStorage.getItem(USER_STORAGE_KEY);
--+    if (!stored) return { id: DEFAULT_USER_ID };
--+    try {
--+      return JSON.parse(stored);
--+    } catch (error) {
--+      console.error('Failed to parse user from storage:', error);
--+      return { id: DEFAULT_USER_ID };
--+    }
--+  },
--+
--+  /**
--+   * Updates the current user in local storage.
--+   */
--+  setCurrentUser: (user: User): void => {
--+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
--+  },
--+
--+  /**
--+   * Clears the user session.
--+   */
--+  clearUser: (): void => {
--+    localStorage.removeItem(USER_STORAGE_KEY);
--+  }
--+};
+diff --git a/src/analytics/AnalyticsDashboard.tsx b/src/analytics/AnalyticsDashboard.tsx
+index fab5814..cbd6028 100644
+--- a/src/analytics/AnalyticsDashboard.tsx
++++ b/src/analytics/AnalyticsDashboard.tsx
+@@ -235,19 +235,19 @@ export function AnalyticsDashboard() {
+           initial={{ opacity: 0, y: 20 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ delay: 0.5 }}
+-          className="bg-error/5 rounded-2xl p-5 border border-error/10"
++          className="bg-error/10 rounded-2xl p-5 border border-error/20 glass"
+         >
+-          <div className="flex items-start gap-3">
+-            <div className="p-2 rounded-xl bg-error/10 shrink-0">
++          <div className="flex items-start gap-4">
++            <div className="p-2.5 rounded-xl bg-error/15 shrink-0 border border-error/20">
+               <AlertCircle className="w-5 h-5 text-error" aria-hidden="true" />
+             </div>
+             <div>
+-              <h4 className="text-[10px] font-black uppercase tracking-widest text-error mb-1">
+-                Health Alert
++              <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-error mb-1.5">
++                Health Risk Detected
+               </h4>
+-              <p className="text-sm text-theme-text-secondary leading-relaxed">
++              <p className="text-sm text-theme-text-primary leading-relaxed font-medium">
+                 Your waist-to-height ratio (
+-                <span className="text-error font-bold">
++                <span className="text-error font-black underline decoration-error/30 underline-offset-4">
+                   {metrics.waistRatio.toFixed(2)}
+                 </span>
+                 ) indicates elevated health risks. Consider consulting with a
+diff --git a/src/analytics/components/QuickLogSection.tsx b/src/analytics/components/QuickLogSection.tsx
+index 9b7ef32..786b436 100644
+--- a/src/analytics/components/QuickLogSection.tsx
++++ b/src/analytics/components/QuickLogSection.tsx
+@@ -1,6 +1,6 @@
+-import React, { memo, useState, useEffect } from "react";
++import React, { useState, useEffect } from "react";
+ import { motion, AnimatePresence } from "framer-motion";
+-import { CheckCircle, Loader2 } from "lucide-react";
++import { CheckCircle, Loader2, X } from "lucide-react";
+ import { Card } from "../../components";
+
+ interface QuickLogSectionProps {
+@@ -13,7 +13,7 @@ interface QuickLogSectionProps {
+   onNavigateMacros: () => void;
+ }
+
+-export const QuickLogSection = memo(
++export const QuickLogSection = React.memo(
+   ({
+     quickLogType,
+     setQuickLogType,
+@@ -24,22 +24,22 @@ export const QuickLogSection = memo(
+     onNavigateMacros,
+   }: QuickLogSectionProps) => {
+     const [showSuccess, setShowSuccess] = useState(false);
+-    const [lastSavedType, setLastSavedType] = useState<string | null>(null);
+
+-    // Show success feedback when saving finishes and quickLogType is cleared
+     useEffect(() => {
+-      if (!isSaving && !quickLogType && lastSavedType) {
+-        setShowSuccess(true);
+-        const timer = setTimeout(() => {
+-          setShowSuccess(false);
+-          setLastSavedType(null);
+-        }, 2500);
++      if (showSuccess) {
++        const timer = setTimeout(() => setShowSuccess(false), 3000);
+         return () => clearTimeout(timer);
+       }
+-      if (isSaving && quickLogType) {
+-        setLastSavedType(quickLogType);
++    }, [showSuccess]);
++
++    // Track the success state when quickLogType becomes null after a save
++    const [prevIsSaving, setPrevIsSaving] = useState(false);
++    useEffect(() => {
++      if (prevIsSaving && !isSaving && !quickLogType) {
++        setShowSuccess(true);
+       }
+-    }, [isSaving, quickLogType, lastSavedType]);
++      setPrevIsSaving(isSaving);
++    }, [isSaving, quickLogType, prevIsSaving]);
+
+     return (
+       <motion.div
+@@ -47,9 +47,9 @@ export const QuickLogSection = memo(
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ delay: 0.4 }}
+       >
+-        <Card className="card-hover overflow-hidden relative">
+-          <div className="flex justify-between items-center mb-4">
+-            <h3 className="text-lg font-bold text-theme-text-primary tracking-tight">
++        <Card className="relative">
++          <div className="flex items-center justify-between mb-6">
++            <h3 className="text-sm font-black uppercase tracking-widest text-theme-text-tertiary">
+               Quick Log
+             </h3>
+             <AnimatePresence>
+@@ -58,7 +58,7 @@ export const QuickLogSection = memo(
+                   initial={{ opacity: 0, x: 20 }}
+                   animate={{ opacity: 1, x: 0 }}
+                   exit={{ opacity: 0, x: 20 }}
+-                  className="flex items-center gap-1.5 text-green-500"
++                  className="flex items-center gap-1.5 text-success"
+                 >
+                   <CheckCircle className="w-4 h-4" />
+                   <span className="text-[10px] font-black uppercase tracking-widest">
+@@ -81,25 +81,25 @@ export const QuickLogSection = memo(
+                 >
+                   <button
+                     onClick={() => setQuickLogType("weight")}
+-                    className="p-3 bg-theme-accent/10 hover:bg-theme-accent/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1"
++                    className="p-4 bg-theme-accent/10 hover:bg-theme-accent/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1 group border border-theme-accent/10 hover:border-theme-accent/30"
+                   >
+-                    <span className="text-sm font-bold text-theme-accent uppercase tracking-wide">
++                    <span className="text-xs font-black text-theme-accent uppercase tracking-widest group-hover:scale-105 transition-transform">
+                       Weight
+                     </span>
+                   </button>
+                   <button
+                     onClick={() => setQuickLogType("waist")}
+-                    className="p-3 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1"
++                    className="p-4 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1 group border border-purple-500/10 hover:border-purple-500/30"
+                   >
+-                    <span className="text-sm font-bold text-purple-400 uppercase tracking-wide">
++                    <span className="text-xs font-black text-purple-400 uppercase tracking-widest group-hover:scale-105 transition-transform">
+                       Waist
+                     </span>
+                   </button>
+                   <button
+                     onClick={onNavigateMacros}
+-                    className="p-3 bg-green-500/10 hover:bg-green-500/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1"
++                    className="p-4 bg-success/10 hover:bg-success/20 rounded-xl transition-all active:scale-95 flex flex-col items-center gap-1 group border border-success/10 hover:border-success/30"
+                   >
+-                    <span className="text-sm font-bold text-green-400 uppercase tracking-wide">
++                    <span className="text-xs font-black text-success uppercase tracking-widest group-hover:scale-105 transition-transform">
+                       Macros
+                     </span>
+                   </button>
+@@ -130,6 +130,7 @@ export const QuickLogSection = memo(
+                       type="submit"
+                       disabled={isSaving || !quickLogValue}
+                       className="p-3 bg-theme-accent hover:bg-theme-accent/90 disabled:opacity-50 text-white rounded-xl transition-all duration-200 active:scale-90 shadow-lg shadow-theme-accent/25 hover:shadow-xl hover:shadow-theme-accent/30"
++                      aria-label="Submit quick log"
+                     >
+                       {isSaving ? (
+                         <Loader2 className="w-6 h-6 animate-spin" />
+@@ -143,9 +144,10 @@ export const QuickLogSection = memo(
+                         setQuickLogType(null);
+                         setQuickLogValue("");
+                       }}
+-                      className="p-3 bg-theme-bg-tertiary hover:bg-theme-bg-tertiary/80 text-theme-text-secondary rounded-xl transition-all duration-200 hover:text-theme-text-primary"
++                      className="p-3 bg-theme-bg-tertiary/60 hover:bg-theme-bg-tertiary text-theme-text-tertiary hover:text-theme-text-primary rounded-xl transition-all duration-200 active:scale-90 border border-white/5"
++                      aria-label="Cancel quick log"
+                     >
+-                      ✕
++                      <X className="w-6 h-6" />
+                     </button>
+                   </div>
+                 </motion.form>
+diff --git a/src/components/Form/index.tsx b/src/components/Form/index.tsx
+index cdb87a5..abcf4cb 100644
+--- a/src/components/Form/index.tsx
++++ b/src/components/Form/index.tsx
+@@ -346,6 +346,36 @@ export function SubmitButton({
+   );
+ }
+
++export interface SecondaryButtonProps {
++  onClick: () => void;
++  label: string;
++  type?: "button" | "submit" | "reset";
++  disabled?: boolean;
++  className?: string;
++}
++
++export function SecondaryButton({
++  onClick,
++  label,
++  type = "button",
++  disabled = false,
++  className,
++}: SecondaryButtonProps) {
++  return (
++    <button
++      type={type}
++      onClick={onClick}
++      disabled={disabled}
++      className={cn(
++        "px-4 py-2 rounded-xl bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary hover:text-theme-text-primary transition-all duration-200 font-bold uppercase text-[10px] tracking-widest active:scale-95 disabled:opacity-50",
++        className
++      )}
++    >
++      {label}
++    </button>
++  );
++}
++
+ // Re-export PercentageLossSlider
+ export { PercentageLossSlider } from "./PercentageLossSlider";
+ export type { PercentageLossSliderProps } from "./PercentageLossSlider";
+diff --git a/src/features/tdee/TDEECalculator.tsx b/src/features/tdee/TDEECalculator.tsx
+index 5f5473c..39259cc 100644
+--- a/src/features/tdee/TDEECalculator.tsx
++++ b/src/features/tdee/TDEECalculator.tsx
+@@ -322,14 +322,14 @@ export function TDEECalculator() {
+           <button
+             type="button"
+             onClick={() => setUseAdvancedMode(false)}
+-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${!useAdvancedMode ? "bg-theme-accent text-white shadow-lg" : "text-theme-text-tertiary hover:text-theme-text-primary"}`}
++            className={cn("flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all duration-300", !useAdvancedMode ? "bg-theme-accent text-white shadow-lg shadow-theme-accent/20" : "text-theme-text-tertiary hover:text-theme-text-primary hover:bg-white/5")}
+           >
+             Standard
+           </button>
+           <button
+             type="button"
+             onClick={() => setUseAdvancedMode(true)}
+-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${useAdvancedMode ? "bg-theme-accent text-white shadow-lg" : "text-theme-text-tertiary hover:text-theme-text-primary"}`}
++            className={cn("flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all duration-300", useAdvancedMode ? "bg-theme-accent text-white shadow-lg shadow-theme-accent/20" : "text-theme-text-tertiary hover:text-theme-text-primary hover:bg-white/5")}
+           >
+             Advanced
+           </button>
+@@ -438,9 +438,9 @@ export function TDEECalculator() {
+         )}
+
+         {useAdvancedMode && (
+-          <div className="mt-4 pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
++          <div className="mt-4 p-5 rounded-2xl bg-theme-bg-tertiary/40 border border-white/5 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
+             <div className="flex items-center justify-between">
+-              <h4 className="text-sm font-semibold text-theme-text-primary">
++              <h4 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">
+                 Advanced Biometrics
+               </h4>
+               <SelectField
+@@ -454,7 +454,7 @@ export function TDEECalculator() {
+                 className="w-24"
+               />
+             </div>
+-            <p className="text-xs text-theme-text-tertiary italic">
++            <p className="text-[11px] font-medium text-theme-text-tertiary leading-relaxed italic">
+               💡 Uses Lean Body Mass (LBM) to calculate BMR. Best for users with
+               higher-than-average muscle mass.
+             </p>
+@@ -512,7 +512,7 @@ export function TDEECalculator() {
+
+       {results && (
+         <div className="mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
+-          <h3 className="text-lg font-semibold text-theme-text-primary mb-4">
++          <h3 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-6 ml-1">
+             Your Results
+           </h3>
+
+diff --git a/src/features/waist-height/WaistLogger.tsx b/src/features/waist-height/WaistLogger.tsx
+index 406ef9a..8bde739 100644
+--- a/src/features/waist-height/WaistLogger.tsx
++++ b/src/features/waist-height/WaistLogger.tsx
+@@ -8,12 +8,14 @@ import {
+   TextAreaField,
+   FormMessage,
+   SubmitButton,
++  SecondaryButton,
+ } from "../../components/Form";
+ import { Card } from "../../components";
+ import { validateWaist } from "../../utils/validation";
+ import { sanitizeInput } from "../../utils/sanitize";
+ import { MIN_WAIST_IN, MAX_WAIST_IN } from "../../config/constants";
+ import { useApp } from "../../context/AppContext";
++import { cn } from "../../utils/ui";
+
+ interface WaistLoggerProps {
+   onWaistLogged?: () => void;
+@@ -134,16 +136,19 @@ export function WaistLogger({ onWaistLogged }: WaistLoggerProps) {
+           <FormMessage type="success" message="Waist measurement logged!" />
+         )}
+
+-        <div className="flex gap-2">
+-          <SubmitButton isSubmitting={isSaving} idleText="Log Waist" />
++        <div
++          className={cn(
++            "grid gap-3",
++            measurement || notes || error || success ? "grid-cols-2" : "grid-cols-1",
++          )}
++        >
++          <SubmitButton isSubmitting={isSaving} idleText="Log Waist" className="w-full" />
+           {(measurement || notes || error || success) && (
+-            <button
+-              type="button"
++            <SecondaryButton
++              label="Clear"
+               onClick={handleClear}
+-              className="px-4 py-2 rounded-xl bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary transition-all duration-200 font-bold uppercase text-[10px] tracking-widest active:scale-95"
+-            >
+-              Clear
+-            </button>
++              className="w-full"
++            />
+           )}
+         </div>
+       </form>
+diff --git a/src/features/weight/WeightLogger.tsx b/src/features/weight/WeightLogger.tsx
+index ddc945d..6186d16 100644
+--- a/src/features/weight/WeightLogger.tsx
++++ b/src/features/weight/WeightLogger.tsx
+@@ -8,12 +8,14 @@ import {
+   TextAreaField,
+   FormMessage,
+   SubmitButton,
++  SecondaryButton,
+ } from "../../components/Form";
+ import { Card } from "../../components";
+ import { validateWeight } from "../../utils/validation";
+ import { sanitizeInput } from "../../utils/sanitize";
+ import { MIN_WEIGHT_LBS, MAX_WEIGHT_LBS } from "../../config/constants";
+ import { useApp } from "../../context/AppContext";
++import { cn } from "../../utils/ui";
+
+ interface WeightLoggerProps {
+   onWeightLogged?: () => void;
+@@ -154,19 +156,23 @@ export function WeightLogger({
+             message={editingEntry ? "Weight updated!" : "Weight logged!"}
+           />
+         )}
+-        <div className="flex gap-2">
++        <div
++          className={cn(
++            "grid gap-3",
++            editingEntry || weight ? "grid-cols-2" : "grid-cols-1",
++          )}
++        >
+           <SubmitButton
+             isSubmitting={isSaving}
+             idleText={editingEntry ? "Update Weight" : "Log Weight"}
++            className="w-full"
+           />
+           {(editingEntry || weight) && (
+-            <button
+-              type="button"
++            <SecondaryButton
++              label={editingEntry ? "Cancel" : "Clear"}
+               onClick={handleCancel}
+-              className="px-4 py-2 rounded-lg bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary transition-colors"
+-            >
+-              Cancel
+-            </button>
++              className="w-full"
++            />
+           )}
+         </div>
+       </form>
+diff --git a/src/styles/index.css b/src/styles/index.css
+index 4fad649..a05bde8 100644
+--- a/src/styles/index.css
++++ b/src/styles/index.css
+@@ -118,6 +118,7 @@ body {
+ button:focus-visible,
+ a:focus-visible {
+   outline: 2px solid var(--accent);
++  box-shadow: 0 0 0 4px var(--color-blue-glow);
+   outline-offset: 2px;
+   border-radius: 4px;
+ }
+@@ -128,6 +129,7 @@ a:focus-visible {
+   backdrop-filter: blur(24px) saturate(180%);
+   -webkit-backdrop-filter: blur(24px) saturate(180%);
+   border: 1px solid rgba(255, 255, 255, 0.08);
++  transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+ }
+
+ :root[data-theme='jewel'] .glass {
+@@ -190,3 +192,11 @@ a:focus-visible {
+     padding-right: env(safe-area-inset-right);
+   }
+ }
++
++.smooth-scale {
++  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
++}
++
++.smooth-scale:active {
++  transform: scale(0.98);
++}

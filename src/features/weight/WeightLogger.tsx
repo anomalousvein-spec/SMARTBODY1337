@@ -8,12 +8,14 @@ import {
   TextAreaField,
   FormMessage,
   SubmitButton,
+  SecondaryButton,
 } from "../../components/Form";
 import { Card } from "../../components";
 import { validateWeight } from "../../utils/validation";
 import { sanitizeInput } from "../../utils/sanitize";
 import { MIN_WEIGHT_LBS, MAX_WEIGHT_LBS } from "../../config/constants";
 import { useApp } from "../../context/AppContext";
+import { cn } from "../../utils/ui";
 
 interface WeightLoggerProps {
   onWeightLogged?: () => void;
@@ -154,19 +156,23 @@ export function WeightLogger({
             message={editingEntry ? "Weight updated!" : "Weight logged!"}
           />
         )}
-        <div className="flex gap-2">
+        <div
+          className={cn(
+            "grid gap-3",
+            editingEntry || weight ? "grid-cols-2" : "grid-cols-1",
+          )}
+        >
           <SubmitButton
             isSubmitting={isSaving}
             idleText={editingEntry ? "Update Weight" : "Log Weight"}
+            className="w-full"
           />
           {(editingEntry || weight) && (
-            <button
-              type="button"
+            <SecondaryButton
+              label={editingEntry ? "Cancel" : "Clear"}
               onClick={handleCancel}
-              className="px-4 py-2 rounded-lg bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary transition-colors"
-            >
-              Cancel
-            </button>
+              className="w-full"
+            />
           )}
         </div>
       </form>

@@ -322,14 +322,14 @@ export function TDEECalculator() {
           <button
             type="button"
             onClick={() => setUseAdvancedMode(false)}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${!useAdvancedMode ? "bg-theme-accent text-white shadow-lg" : "text-theme-text-tertiary hover:text-theme-text-primary"}`}
+            className={cn("flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all duration-300", !useAdvancedMode ? "bg-theme-accent text-white shadow-lg shadow-theme-accent/20" : "text-theme-text-tertiary hover:text-theme-text-primary hover:bg-white/5")}
           >
             Standard
           </button>
           <button
             type="button"
             onClick={() => setUseAdvancedMode(true)}
-            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-all ${useAdvancedMode ? "bg-theme-accent text-white shadow-lg" : "text-theme-text-tertiary hover:text-theme-text-primary"}`}
+            className={cn("flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all duration-300", useAdvancedMode ? "bg-theme-accent text-white shadow-lg shadow-theme-accent/20" : "text-theme-text-tertiary hover:text-theme-text-primary hover:bg-white/5")}
           >
             Advanced
           </button>
@@ -438,9 +438,9 @@ export function TDEECalculator() {
         )}
 
         {useAdvancedMode && (
-          <div className="mt-4 pt-4 border-t border-white/5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="mt-4 p-5 rounded-2xl bg-theme-bg-tertiary/40 border border-white/5 space-y-5 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-semibold text-theme-text-primary">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary">
                 Advanced Biometrics
               </h4>
               <SelectField
@@ -454,7 +454,7 @@ export function TDEECalculator() {
                 className="w-24"
               />
             </div>
-            <p className="text-xs text-theme-text-tertiary italic">
+            <p className="text-[11px] font-medium text-theme-text-tertiary leading-relaxed italic">
               💡 Uses Lean Body Mass (LBM) to calculate BMR. Best for users with
               higher-than-average muscle mass.
             </p>
@@ -512,7 +512,7 @@ export function TDEECalculator() {
 
       {results && (
         <div className="mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
-          <h3 className="text-lg font-semibold text-theme-text-primary mb-4">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-theme-text-tertiary mb-6 ml-1">
             Your Results
           </h3>
 

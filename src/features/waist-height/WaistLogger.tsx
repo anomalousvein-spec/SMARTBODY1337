@@ -8,12 +8,14 @@ import {
   TextAreaField,
   FormMessage,
   SubmitButton,
+  SecondaryButton,
 } from "../../components/Form";
 import { Card } from "../../components";
 import { validateWaist } from "../../utils/validation";
 import { sanitizeInput } from "../../utils/sanitize";
 import { MIN_WAIST_IN, MAX_WAIST_IN } from "../../config/constants";
 import { useApp } from "../../context/AppContext";
+import { cn } from "../../utils/ui";
 
 interface WaistLoggerProps {
   onWaistLogged?: () => void;
@@ -134,16 +136,19 @@ export function WaistLogger({ onWaistLogged }: WaistLoggerProps) {
           <FormMessage type="success" message="Waist measurement logged!" />
         )}
 
-        <div className="flex gap-2">
-          <SubmitButton isSubmitting={isSaving} idleText="Log Waist" />
+        <div
+          className={cn(
+            "grid gap-3",
+            measurement || notes || error || success ? "grid-cols-2" : "grid-cols-1",
+          )}
+        >
+          <SubmitButton isSubmitting={isSaving} idleText="Log Waist" className="w-full" />
           {(measurement || notes || error || success) && (
-            <button
-              type="button"
+            <SecondaryButton
+              label="Clear"
               onClick={handleClear}
-              className="px-4 py-2 rounded-xl bg-theme-bg-tertiary text-theme-text-secondary hover:bg-theme-bg-secondary transition-all duration-200 font-bold uppercase text-[10px] tracking-widest active:scale-95"
-            >
-              Clear
-            </button>
+              className="w-full"
+            />
           )}
         </div>
       </form>

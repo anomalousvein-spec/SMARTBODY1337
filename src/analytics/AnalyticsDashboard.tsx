@@ -235,19 +235,19 @@ export function AnalyticsDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-error/5 rounded-2xl p-5 border border-error/10"
+          className="bg-error/10 rounded-2xl p-5 border border-error/20 glass"
         >
-          <div className="flex items-start gap-3">
-            <div className="p-2 rounded-xl bg-error/10 shrink-0">
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 rounded-xl bg-error/15 shrink-0 border border-error/20">
               <AlertCircle className="w-5 h-5 text-error" aria-hidden="true" />
             </div>
             <div>
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-error mb-1">
-                Health Alert
+              <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-error mb-1.5">
+                Health Risk Detected
               </h4>
-              <p className="text-sm text-theme-text-secondary leading-relaxed">
+              <p className="text-sm text-theme-text-primary leading-relaxed font-medium">
                 Your waist-to-height ratio (
-                <span className="text-error font-bold">
+                <span className="text-error font-black underline decoration-error/30 underline-offset-4">
                   {metrics.waistRatio.toFixed(2)}
                 </span>
                 ) indicates elevated health risks. Consider consulting with a
